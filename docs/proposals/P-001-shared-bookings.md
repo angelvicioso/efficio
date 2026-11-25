@@ -37,7 +37,7 @@ party_data          each organization's private info about a booking
 
 **Bonus:** if five companies track the same booking, we call Port Houston once, not five times.
 
-## Draft visibility matrix (for Orlando to correct, Q-027)
+## Draft visibility matrix (for Orlando to correct, Q-028)
 | Data | Exporter | Carrier | Trucker | Terminal | Warehouse |
 |---|---|---|---|---|---|
 | Port data: receiving window, cutoffs, on-file status | ✅ | ✅ | ✅ | ✅ (source) | ✅ |
@@ -77,6 +77,6 @@ Many exporters don't book with the carrier directly. A **freight forwarder or NV
 **Recommendation:** make the data model change **now**, while there's no real data and only one screen depends on it. Role-based field filtering and verification can wait until carriers actually join.
 
 ## Decisions needed
-1. Adopt this model? (Eduardo)
+1. Adopt this model? (Eduardo, Q-027)
 2. Q-017: carrier required when adding a booking. Recommended: **yes**, because it's now part of what identifies a booking.
-3. Q-027 to Q-030 below.
+3. Q-028 (visibility matrix), Q-029 (who can see terminal data today) and Q-030 (forwarders), all for Orlando.
