@@ -1,6 +1,6 @@
 import { canManageOrgSettings } from "@/lib/auth/permissions";
 import { requireTeamManager } from "@/lib/auth/session";
-import { formatHouston } from "@/lib/format";
+import { formatHouston, formatTime } from "@/lib/format";
 import { accountService } from "@/lib/service";
 import { ActionForm } from "../../../ActionForm";
 import {
@@ -10,6 +10,7 @@ import {
   revokeInviteAction,
   setDisabledAction,
   setRoleAction,
+  unlockMemberAction,
 } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -64,6 +65,21 @@ export default async function TeamPage({ params }: { params: Promise<{ org: stri
                     </td>
                     <td>
                       {m.disabled ? <span className="badge badge-closed">Disabled</span> : <span className="badge badge-open">Active</span>}
+                      {(() => {
+                        const until = accounts.lockedUntil(m.email);
+                        return until ? (
+                          <div className="lock-line">
+                            <span className="badge badge-closing-soon">Locked until {formatTime(until)}</span>
+                            <form action={unlockMemberAction} className="inline">
+                              <input type="hidden" name="org" value={org.slug} />
+                              <input type="hidden" name="userId" value={m.id} />
+                              <button type="submit" className="link-button">
+                                Unlock
+                              </button>
+                            </form>
+                          </div>
+                        ) : null;
+                      })()}
                     </td>
                     <td className="actions-cell">
                       {m.id !== user.id && (

@@ -71,3 +71,11 @@ export async function setSuperAdminDisabledAction(_prev: FormState, formData: Fo
   revalidatePath("/admin");
   return {};
 }
+
+/** Lift a super admin's sign-in lockout (R-014). */
+export async function unlockSuperAdminAction(formData: FormData): Promise<void> {
+  await requireSuperAdmin();
+  const target = accountService().getUser(Number(formData.get("userId")));
+  if (target?.isSuperAdmin) accountService().unlock(target.email);
+  revalidatePath("/admin");
+}

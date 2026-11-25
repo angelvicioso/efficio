@@ -58,6 +58,14 @@ export class AccountError extends Error {
 export const SESSION_DAYS = 14;
 export const INVITE_DAYS = 7;
 export const MIN_PASSWORD_LENGTH = 10;
+/** R-014 / D-021: 5 wrong passwords in a row lock the email for an hour. */
+export const MAX_FAILED_LOGINS = 5;
+export const LOCKOUT_MINUTES = 60;
+
+export type LoginResult =
+  | { ok: true; user: User }
+  | { ok: false; reason: "invalid" }
+  | { ok: false; reason: "locked"; lockedUntil: string };
 
 /** Free email providers can't identify a company, so they can't be organization domains. */
 const PUBLIC_EMAIL_DOMAINS = new Set([
@@ -404,17 +412,54 @@ export class AccountService {
 
   // ---------- Login & sessions ----------
 
-  /** Returns the user for a correct email/password, or null. Same message for every failure. */
-  async authenticate(emailInput: string, password: string): Promise<User | null> {
-    const r = this.db.prepare("SELECT * FROM users WHERE email = ?").get(normalizeEmail(emailInput)) as UserRow | undefined;
-    if (!r) {
-      // Spend the same time as a real check so response timing doesn't reveal which emails exist.
-      await verifyPassword(password, DUMMY_HASH);
-      return null;
+  /**
+   * Sign-in with lockout (R-014, D-021): after MAX_FAILED_LOGINS wrong attempts in a row for an
+   * email, it's locked for LOCKOUT_MINUTES, even with the right password. Unknown emails are
+   * counted and locked the same way, so responses never reveal whether an account exists.
+   */
+  async authenticate(emailInput: string, password: string): Promise<LoginResult> {
+    const email = normalizeEmail(emailInput);
+    const lockedUntil = this.lockedUntil(email);
+    if (lockedUntil) return { ok: false, reason: "locked", lockedUntil };
+
+    const r = this.db.prepare("SELECT * FROM users WHERE email = ?").get(email) as UserRow | undefined;
+    // Spend the same time whether or not the account exists, so timing doesn't reveal it either.
+    const passwordOk = await verifyPassword(password, r?.password_hash ?? DUMMY_HASH);
+    if (r && passwordOk && !r.disabled_at) {
+      this.db.prepare("DELETE FROM login_attempts WHERE email = ?").run(email);
+      return { ok: true, user: toUser(r) };
     }
-    if (!(await verifyPassword(password, r.password_hash))) return null;
-    if (r.disabled_at) return null;
-    return toUser(r);
+    return this.recordFailure(email);
+  }
+
+  private recordFailure(email: string): LoginResult {
+    const row = this.db.prepare("SELECT failures FROM login_attempts WHERE email = ?").get(email) as { failures: number } | undefined;
+    const failures = (row?.failures ?? 0) + 1;
+    const lockedUntil = failures >= MAX_FAILED_LOGINS ? this.iso(LOCKOUT_MINUTES * 60_000) : null;
+    this.db
+      .prepare(
+        `INSERT INTO login_attempts (email, failures, locked_until, last_failure_at) VALUES (?, ?, ?, ?)
+         ON CONFLICT(email) DO UPDATE SET failures = excluded.failures, locked_until = excluded.locked_until, last_failure_at = excluded.last_failure_at`,
+      )
+      .run(email, lockedUntil ? 0 : failures, lockedUntil, this.iso());
+    return lockedUntil ? { ok: false, reason: "locked", lockedUntil } : { ok: false, reason: "invalid" };
+  }
+
+  /** When this email's lockout ends, or null if it isn't locked. Expired lockouts are cleared. */
+  lockedUntil(emailInput: string): string | null {
+    const email = normalizeEmail(emailInput);
+    const row = this.db.prepare("SELECT locked_until FROM login_attempts WHERE email = ?").get(email) as
+      | { locked_until: string | null }
+      | undefined;
+    if (!row?.locked_until) return null;
+    if (row.locked_until > this.iso()) return row.locked_until;
+    this.db.prepare("DELETE FROM login_attempts WHERE email = ?").run(email);
+    return null;
+  }
+
+  /** Lift a lockout early (org admins for their team, super admins for anyone). */
+  unlock(emailInput: string): void {
+    this.db.prepare("DELETE FROM login_attempts WHERE email = ?").run(normalizeEmail(emailInput));
   }
 
   createSession(userId: number): { token: string; expiresAt: Date } {

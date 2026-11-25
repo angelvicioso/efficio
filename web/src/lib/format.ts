@@ -23,3 +23,10 @@ export function formatAgo(iso: string, now: Date = new Date()): string {
   if (hours < 24) return `${hours}h ago`;
   return `${Math.round(hours / 24)}d ago`;
 }
+
+const timeOnly = new Intl.DateTimeFormat("en-US", { timeZone: HOUSTON, hour: "numeric", minute: "2-digit" });
+
+/** "3:45 PM" in Houston time. */
+export function formatTime(iso: string): string {
+  return timeOnly.format(new Date(iso));
+}

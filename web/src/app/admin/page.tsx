@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ORG_TYPES } from "@/lib/auth/accounts";
 import { CARRIERS, carrierName } from "@/lib/domain/carriers";
 import { requireSuperAdmin } from "@/lib/auth/session";
-import { formatHouston } from "@/lib/format";
+import { formatHouston, formatTime } from "@/lib/format";
 import { accountService } from "@/lib/service";
 import { ActionForm } from "../ActionForm";
 import {
@@ -10,6 +10,7 @@ import {
   inviteSuperAdminAction,
   revokeSuperAdminInviteAction,
   setSuperAdminDisabledAction,
+  unlockSuperAdminAction,
 } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -120,7 +121,23 @@ export default async function AdminPage() {
                     {u.id === me.id && <span className="muted small"> (you)</span>}
                     <div className="muted small">{u.email}</div>
                   </td>
-                  <td>{u.disabled ? <span className="badge badge-closed">Disabled</span> : <span className="badge badge-open">Active</span>}</td>
+                  <td>
+                    {u.disabled ? <span className="badge badge-closed">Disabled</span> : <span className="badge badge-open">Active</span>}
+                    {(() => {
+                      const until = accounts.lockedUntil(u.email);
+                      return until ? (
+                        <div className="lock-line">
+                          <span className="badge badge-closing-soon">Locked until {formatTime(until)}</span>
+                          <form action={unlockSuperAdminAction} className="inline">
+                            <input type="hidden" name="userId" value={u.id} />
+                            <button type="submit" className="link-button">
+                              Unlock
+                            </button>
+                          </form>
+                        </div>
+                      ) : null;
+                    })()}
+                  </td>
                   <td className="actions-cell">
                     {u.id !== me.id && (
                       <ActionForm action={setSuperAdminDisabledAction} submitLabel={u.disabled ? "Enable" : "Disable"} variant="secondary" className="inline">

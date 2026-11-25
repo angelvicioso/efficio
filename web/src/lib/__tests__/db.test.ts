@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { openDb } from "../db";
 
-describe("database upgrade v2 -> v3", () => {
+describe("database upgrade v2 -> v4", () => {
   it("keeps accounts and resets bookings", () => {
     const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "efficio-")), "v2.db");
     const v2 = new DatabaseSync(file);
@@ -30,7 +30,14 @@ describe("database upgrade v2 -> v3", () => {
     v2.close();
 
     const db = openDb(file);
-    expect(db.prepare("PRAGMA user_version").get()).toEqual({ user_version: 3 });
+    expect(db.prepare("PRAGMA user_version").get()).toEqual({ user_version: 4 });
+    expect(db.prepare("SELECT COUNT(*) AS n FROM login_attempts").get()).toEqual({ n: 0 });
+    // A safety copy of the old file was made before upgrading (D-022)
+    const copies = fs.readdirSync(path.dirname(file)).filter((f) => f.startsWith("v2.db.before-v4-"));
+    expect(copies).toHaveLength(1);
+    const old = new DatabaseSync(path.join(path.dirname(file), copies[0]));
+    expect(old.prepare("PRAGMA user_version").get()).toEqual({ user_version: 2 });
+    expect(old.prepare("SELECT COUNT(*) AS n FROM bookings").get()).toEqual({ n: 1 });
     expect(db.prepare("SELECT email FROM users").all()).toEqual([{ email: "e@x.com" }]);
     expect(db.prepare("SELECT slug, carrier_code FROM organizations").all()).toEqual([{ slug: "acme", carrier_code: null }]);
     expect(db.prepare("SELECT COUNT(*) AS n FROM bookings").get()).toEqual({ n: 0 });

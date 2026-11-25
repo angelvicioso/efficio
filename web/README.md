@@ -29,6 +29,7 @@ Either run `npm run demo:seed` for ready-made demo logins (below), or open the a
 - Invites only go to emails on the organization's domains. Super admins can override this, e.g. for a consultant.
 - Invite links work once and expire after 7 days. Efficio doesn't send email yet, so you copy the link and send it yourself.
 - Sessions last 14 days. Disabling an account signs that person out immediately.
+- **5 wrong passwords in a row lock that email for 1 hour** (D-021). Org admins can unlock their team on the Team page; super admins can unlock anyone.
 
 ### Shared bookings (P-001)
 - A booking is identified by **carrier + booking number** and is shared by every company that follows it.
@@ -115,6 +116,5 @@ src/app/login, setup, invite/[token]   Sign-in, first-run setup, accepting an in
 
 ## Not built yet
 - **Email** (invites, password reset). Until then a super admin resets a password by disabling the account and sending a new invite.
-- **Login rate limiting** (R-014). Add it before the app is on the public internet.
 - **Live Port Houston lookups.** Needs the N4 booking and vessel visit endpoints (Q-021, S-013).
 - **Alerts (S-021).**

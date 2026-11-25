@@ -1,7 +1,8 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { AccountError } from "@/lib/auth/accounts";
+import { AccountError, MAX_FAILED_LOGINS } from "@/lib/auth/accounts";
+import { formatTime } from "@/lib/format";
 import { endSession, homePath, startSession } from "@/lib/auth/session";
 import { accountService } from "@/lib/service";
 import type { FormState } from "./ActionForm";
@@ -13,10 +14,17 @@ function message(e: unknown): string {
 }
 
 export async function loginAction(_prev: FormState, formData: FormData): Promise<FormState> {
-  const user = await accountService().authenticate(String(formData.get("email") ?? ""), String(formData.get("password") ?? ""));
-  if (!user) return { error: "That email and password don't match an active account." };
-  await startSession(user.id);
-  redirect(homePath(user));
+  const result = await accountService().authenticate(String(formData.get("email") ?? ""), String(formData.get("password") ?? ""));
+  if (!result.ok) {
+    if (result.reason === "locked") {
+      return {
+        error: `Too many failed sign-in attempts. Try again after ${formatTime(result.lockedUntil)} (Houston time), or ask your company's Efficio admin to unlock your account.`,
+      };
+    }
+    return { error: `That email and password don't match an active account. After ${MAX_FAILED_LOGINS} failed attempts, sign-in is locked for an hour.` };
+  }
+  await startSession(result.user.id);
+  redirect(homePath(result.user));
 }
 
 export async function logoutAction(): Promise<void> {

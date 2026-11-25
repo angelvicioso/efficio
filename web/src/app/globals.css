@@ -255,3 +255,4 @@ table.containers th, table.containers td { font-size: 0.85rem; padding: 0.45rem 
   .group-stats { min-width: 0; }
 }
 table.containers th, table.containers td { white-space: nowrap; }
+.lock-line { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.35rem; flex-wrap: wrap; }

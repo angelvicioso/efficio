@@ -107,9 +107,10 @@ describe("invites", () => {
 describe("login and sessions", () => {
   it("authenticates case-insensitively and rejects wrong passwords and unknown emails", async () => {
     const { a, root } = await setup();
-    expect((await a.authenticate("EDUARDO@efficio.test", PASSWORD))?.id).toBe(root.id);
-    expect(await a.authenticate("eduardo@efficio.test", "wrong-password")).toBeNull();
-    expect(await a.authenticate("nobody@efficio.test", PASSWORD)).toBeNull();
+    const ok = await a.authenticate("EDUARDO@efficio.test", PASSWORD);
+    expect(ok.ok && ok.user.id).toBe(root.id);
+    expect(await a.authenticate("eduardo@efficio.test", "wrong-password")).toEqual({ ok: false, reason: "invalid" });
+    expect(await a.authenticate("nobody@efficio.test", PASSWORD)).toEqual({ ok: false, reason: "invalid" });
   });
 
   it("sessions expire, end on logout, and end when a user is disabled", async () => {
@@ -127,7 +128,7 @@ describe("login and sessions", () => {
     const s2 = a.createSession(bob.id);
     a.setDisabled(bob.id, true);
     expect(a.getSessionUser(s2.token)).toBeNull();
-    expect(await a.authenticate("bob@acme.com", PASSWORD)).toBeNull();
+    expect((await a.authenticate("bob@acme.com", PASSWORD)).ok).toBe(false);
 
     const s3 = a.createSession(ann.id);
     t = new Date("2026-12-15T12:00:01Z"); // 14 days later
@@ -170,5 +171,59 @@ describe("carrier organizations", () => {
     expect(a.createOrganization({ name: "Maersk", type: "ocean_carrier", carrierCode: "maeu" }).carrierCode).toBe("MAEU");
     expect(() => a.createOrganization({ name: "Maersk 2", type: "ocean_carrier", carrierCode: "MAEU" })).toThrow(/already carrier/);
     expect(() => a.createOrganization({ name: "Yolo Exports", type: "exporter", carrierCode: "MSCU" })).toThrow(/Only ocean carrier/);
+  });
+});
+
+describe("login lockout (R-014, D-021)", () => {
+  async function lockedSetup() {
+    let t = new Date("2026-12-01T12:00:00Z");
+    const ctx = await setup(() => t);
+    return { ...ctx, advance: (ms: number) => (t = new Date(t.getTime() + ms)) };
+  }
+  const tryWrong = (a: AccountService, email: string, n: number) =>
+    Promise.all(Array.from({ length: n }, () => a.authenticate(email, "wrong-password")));
+
+  it("locks after 5 wrong passwords, even for the right password, for one hour", async () => {
+    const { a, advance } = await lockedSetup();
+    const results = [];
+    for (let i = 0; i < 5; i++) results.push(await a.authenticate("eduardo@efficio.test", "wrong-password"));
+    expect(results.slice(0, 4).every((r) => !r.ok && r.reason === "invalid")).toBe(true);
+    expect(results[4]).toEqual({ ok: false, reason: "locked", lockedUntil: "2026-12-01T13:00:00.000Z" });
+    expect(await a.authenticate("eduardo@efficio.test", PASSWORD)).toMatchObject({ ok: false, reason: "locked" });
+
+    advance(59 * 60_000);
+    expect((await a.authenticate("eduardo@efficio.test", PASSWORD)).ok).toBe(false);
+    advance(2 * 60_000);
+    expect((await a.authenticate("eduardo@efficio.test", PASSWORD)).ok).toBe(true);
+  });
+
+  it("a successful sign-in resets the count", async () => {
+    const { a } = await lockedSetup();
+    await tryWrong(a, "eduardo@efficio.test", 4);
+    expect((await a.authenticate("eduardo@efficio.test", PASSWORD)).ok).toBe(true);
+    await tryWrong(a, "eduardo@efficio.test", 4);
+    expect(a.lockedUntil("eduardo@efficio.test")).toBeNull();
+  });
+
+  it("an admin can unlock early", async () => {
+    const { a } = await lockedSetup();
+    await tryWrong(a, "eduardo@efficio.test", 5);
+    expect(a.lockedUntil("EDUARDO@efficio.test")).toBe("2026-12-01T13:00:00.000Z");
+    a.unlock("eduardo@efficio.test");
+    expect((await a.authenticate("eduardo@efficio.test", PASSWORD)).ok).toBe(true);
+  });
+
+  it("unknown emails lock the same way, so lockouts don't reveal which accounts exist", async () => {
+    const { a } = await lockedSetup();
+    const r = await tryWrong(a, "nobody@efficio.test", 5);
+    expect(r[4]).toMatchObject({ ok: false, reason: "locked" });
+  });
+
+  it("locks per email: other accounts aren't affected", async () => {
+    const { a, root, acme } = await lockedSetup();
+    const { token } = a.createInvite({ email: "ann@acme.com", orgId: acme.id, orgRole: "admin", createdBy: root.id });
+    await join(a, token);
+    await tryWrong(a, "eduardo@efficio.test", 5);
+    expect((await a.authenticate("ann@acme.com", PASSWORD)).ok).toBe(true);
   });
 });

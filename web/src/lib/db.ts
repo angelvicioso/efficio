@@ -6,7 +6,7 @@ import path from "node:path";
  * SQLite via Node's built-in driver: no native build step, one file on disk.
  * Fine for a single-server POC; swap for Postgres when we have real users.
  */
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 
 /**
  * Shared bookings (P-001, D-015): one record per real booking (carrier + number).
@@ -43,6 +43,19 @@ const BOOKING_TABLES = `
 `;
 
 /**
+ * Failed sign-in tracking (R-014, D-021). Keyed by email, including emails with no
+ * account, so a lockout never reveals whether an account exists.
+ */
+const LOGIN_ATTEMPTS_TABLE = `
+  CREATE TABLE login_attempts (
+    email TEXT PRIMARY KEY,
+    failures INTEGER NOT NULL DEFAULT 0,
+    locked_until TEXT,
+    last_failure_at TEXT
+  );
+`;
+
+/**
  * Upgrades from older versions. v2 -> v3 keeps organizations, users, sessions and invites,
  * and resets bookings: before v3 they had no carrier and only ever held simulated data.
  */
@@ -54,6 +67,7 @@ const MIGRATIONS: Record<number, string> = {
     DROP TABLE bookings;
     ${BOOKING_TABLES}
   `,
+  4: LOGIN_ATTEMPTS_TABLE,
 };
 
 const SCHEMA = `
@@ -99,7 +113,7 @@ const SCHEMA = `
     used_at TEXT,
     created_at TEXT NOT NULL
   );
-${BOOKING_TABLES}  CREATE INDEX users_org ON users(org_id);
+${BOOKING_TABLES}${LOGIN_ATTEMPTS_TABLE}  CREATE INDEX users_org ON users(org_id);
   CREATE INDEX sessions_user ON sessions(user_id);
 `;
 
@@ -119,6 +133,12 @@ export function openDb(file: string): DatabaseSync {
     }
     conn.exec(`BEGIN; ${SCHEMA} PRAGMA user_version = ${SCHEMA_VERSION}; COMMIT;`);
   } else if (version < SCHEMA_VERSION) {
+    // Safety copy before changing the database's structure (D-022): if an upgrade goes wrong,
+    // the previous file is next to it, e.g. efficio.db.before-v4-2026-11-25T05-00-00Z.
+    if (file !== ":memory:") {
+      const stamp = new Date().toISOString().replace(/[:.]/g, "-").replace(/-\d{3}Z$/, "Z");
+      conn.exec(`VACUUM INTO '${`${file}.before-v${SCHEMA_VERSION}-${stamp}`.replace(/'/g, "''")}'`);
+    }
     for (let v = version + 1; v <= SCHEMA_VERSION; v++) {
       conn.exec("PRAGMA foreign_keys = OFF;");
       conn.exec(`BEGIN; ${MIGRATIONS[v]} PRAGMA user_version = ${v}; COMMIT;`);

@@ -152,6 +152,14 @@ export async function setDisabledAction(_prev: FormState, formData: FormData): P
   return {};
 }
 
+/** Lift a sign-in lockout (R-014) for someone on this team. */
+export async function unlockMemberAction(formData: FormData): Promise<void> {
+  const { org } = await requireTeamManager(slugOf(formData));
+  const target = memberOf(org.id, Number(formData.get("userId")));
+  if (target) accountService().unlock(target.email);
+  revalidatePath(`/o/${org.slug}/team`);
+}
+
 // ---------- Organization settings (super admins) ----------
 
 export async function addDomainAction(_prev: FormState, formData: FormData): Promise<FormState> {
