@@ -113,3 +113,13 @@ export async function checkPortHoustonAction(_prev: FormState, _formData: FormDa
   const lines = await runPortHoustonCheck();
   return { details: lines.join("\n") };
 }
+
+/** Super admin diagnostic: live lookup of one booking, step by step (S-013). */
+export async function checkBookingAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  await requireSuperAdmin();
+  const carrierCode = String(formData.get("carrierCode") ?? "");
+  const bookingNumber = String(formData.get("bookingNumber") ?? "").trim();
+  if (!carrierCode || !/^[A-Za-z0-9-]{4,30}$/.test(bookingNumber)) return { error: "Choose a carrier and enter a booking number." };
+  const { runBookingCheck } = await import("@/lib/ports/navis/check");
+  return { details: (await runBookingCheck(carrierCode, bookingNumber)).join("\n") };
+}

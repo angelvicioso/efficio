@@ -16,11 +16,15 @@ const RANK: Record<ContainerStage, number> = { EMPTY_PICKED_UP: 1, FULL_AT_TERMI
 export function containerProgress(snapshot: PortBookingSnapshot | null | undefined): ContainerProgress {
   const containers = snapshot?.containers ?? [];
   const bookedQty = (snapshot?.equipment ?? []).reduce((n, e) => n + e.quantity, 0);
+  // The terminal's own tallies can be ahead of the container records we could match.
+  const tally = snapshot?.tally;
+  const pickedUp = Math.max(containers.filter((c) => RANK[c.stage] >= 1).length, tally?.emptiesOut ?? 0);
+  const atTerminal = Math.max(containers.filter((c) => RANK[c.stage] >= 2).length, tally?.loadsIn ?? 0);
   return {
     // Never report fewer booked than the terminal has actually handled.
-    booked: Math.max(bookedQty, containers.length),
-    pickedUp: containers.filter((c) => RANK[c.stage] >= 1).length,
-    atTerminal: containers.filter((c) => RANK[c.stage] >= 2).length,
+    booked: Math.max(bookedQty, containers.length, pickedUp),
+    pickedUp: Math.max(pickedUp, atTerminal),
+    atTerminal,
     loaded: containers.filter((c) => RANK[c.stage] >= 3).length,
   };
 }

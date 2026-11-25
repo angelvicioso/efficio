@@ -14,6 +14,7 @@ import {
   addSampleDataAction,
   removeSampleDataAction,
   checkPortHoustonAction,
+  checkBookingAction,
 } from "./actions";
 import { portHoustonConfigured } from "@/lib/ports/navis/check";
 import { hasSampleData } from "@/lib/demo/sample";
@@ -141,6 +142,30 @@ export default async function AdminPage() {
               {getPortAdapter().source === "mock" ? "simulated" : "live"} data either way.
             </p>
             <ActionForm action={checkPortHoustonAction} submitLabel="Test Port Houston connection" pendingLabel="Testing… (up to a minute)" variant="secondary" />
+            <h3>Test a booking</h3>
+            <p className="muted small">
+              Looks up one real booking the way Efficio will once live data is on, and shows each step and the result.
+              Unlike the connection test, this shows real values, for this one booking only.
+            </p>
+            <ActionForm action={checkBookingAction} submitLabel="Test booking" pendingLabel="Looking up… (up to a minute)" variant="secondary" className="stack">
+              <label>
+                Carrier
+                <select name="carrierCode" required defaultValue="">
+                  <option value="" disabled>
+                    Carrier…
+                  </option>
+                  {Object.entries(CARRIERS).map(([code, name]) => (
+                    <option key={code} value={code}>
+                      {name} ({code})
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Booking number
+                <input name="bookingNumber" required autoComplete="off" />
+              </label>
+            </ActionForm>
           </>
         ) : (
           <p className="muted small">

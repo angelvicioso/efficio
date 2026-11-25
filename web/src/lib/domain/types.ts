@@ -66,6 +66,11 @@ export interface PortBookingSnapshot {
   equipment?: EquipmentLine[];
   /** Containers the terminal knows for this booking (picked up empty or later). */
   containers?: Container[];
+  /**
+   * The terminal's own running counts for the booking (N4 booking "tally" / "tallyReceive"),
+   * used when individual container records are incomplete.
+   */
+  tally?: { emptiesOut: number; loadsIn: number };
   /** The untranslated response, so exporters can see exactly what the port says (S-002). */
   raw: unknown;
   fetchedAt: string;

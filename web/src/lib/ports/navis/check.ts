@@ -11,7 +11,8 @@ import { describeCredentials, EvpClient } from "./evpClient";
 export function mask(value: unknown): string {
   if (value === null) return "null";
   if (typeof value === "string") return `"${value.replace(/[A-Z]/g, "A").replace(/[a-z]/g, "a").replace(/[0-9]/g, "9").slice(0, 40)}"`;
-  if (typeof value === "number") return Number.isInteger(value) ? "<integer>" : "<number>";
+  // Digit count is safe and tells dates apart: 13 digits = epoch milliseconds, 10 = seconds.
+  if (typeof value === "number") return Number.isInteger(value) ? `<integer, ${String(Math.abs(value)).length} digits>` : "<number>";
   if (typeof value === "boolean") return "<true/false>";
   return typeof value;
 }
@@ -81,5 +82,47 @@ export async function runPortHoustonCheck(client?: EvpClient): Promise<string[]>
     out.push("");
   }
   out.push("Done. This report contains field names and formats only, no real values.");
+  return out;
+}
+
+/**
+ * Runs the live lookup for one booking (admin "Test a booking"), and reports each step plus
+ * what Efficio would show. Real values for this one booking only; never other companies' data.
+ */
+export async function runBookingCheck(carrierCode: string, bookingNumber: string, client?: EvpClient): Promise<string[]> {
+  const { NavisPortHoustonAdapter } = await import("./adapter");
+  const { containerProgress } = await import("@/lib/domain/containers");
+  const out: string[] = [`Booking ${bookingNumber.trim().toUpperCase()} · carrier ${carrierCode.trim().toUpperCase()}`, ""];
+  let adapter;
+  try {
+    adapter = new NavisPortHoustonAdapter(client ?? EvpClient.fromEnv());
+  } catch (e) {
+    return [...out, `✗ ${e instanceof Error ? e.message : String(e)}`];
+  }
+  try {
+    const s = await adapter.lookupBooking({ carrierCode, bookingNumber }, (l) => out.push(`  · ${l}`));
+    out.push("", "What Efficio would show:");
+    if (!s.onFile) {
+      out.push("  Not on file at the terminal (for this carrier).");
+      return out;
+    }
+    const p = containerProgress(s);
+    const cutoff = s.cutoffs.find((c) => c.kind === "cargo")?.at ?? "—";
+    out.push(
+      `  Terminal: ${s.terminal ?? "—"}`,
+      `  Vessel: ${s.vesselVisit ? `${s.vesselVisit.vesselName} / ${s.vesselVisit.voyage ?? "—"} (visit ${s.vesselVisit.id})` : "—"}`,
+      `  Departs: ${s.vesselVisit?.etd ?? "—"}`,
+      `  Receiving opens: ${s.receivingOpensAt ?? "—"}`,
+      `  Cargo cutoff: ${cutoff}`,
+      `  Other cutoffs: ${s.cutoffs.filter((c) => c.kind !== "cargo").map((c) => `${c.kind} ${c.at}`).join(", ") || "—"}`,
+      `  Booked: ${(s.equipment ?? []).map((e) => `${e.quantity} × ${e.sizeType}`).join(", ") || "—"}`,
+      `  Containers: ${p.booked} booked · ${p.pickedUp} picked up · ${p.atTerminal} at terminal · ${p.loaded} on vessel`,
+      ...(s.containers ?? []).map((c) => `    ${c.number}  ${c.sizeType || "?"}  ${c.stage}  out ${c.emptyPickedUpAt ?? "—"}  in ${c.fullGateInAt ?? "—"}  loaded ${c.loadedAt ?? "—"}`),
+      "",
+      "Times are UTC. Compare these with what Orlando sees in Lynx for the same booking.",
+    );
+  } catch (e) {
+    out.push(`✗ ${e instanceof Error ? e.message : String(e)}`);
+  }
   return out;
 }

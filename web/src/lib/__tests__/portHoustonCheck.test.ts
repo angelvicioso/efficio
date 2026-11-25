@@ -6,7 +6,8 @@ group("port-houston:check output never shows real values", () => {
     expect(mask("MSKU1234565")).toBe('"AAAA9999999"');
     expect(mask("2026-11-25T14:00:00Z")).toBe('"9999-99-99A99:99:99A"');
     expect(mask("Acme Exports Inc")).toBe('"Aaaa Aaaaaaa Aaa"');
-    expect(mask(42)).toBe("<integer>");
+    expect(mask(42)).toBe("<integer, 2 digits>");
+    expect(mask(1764370800000)).toBe("<integer, 13 digits>");
     expect(mask(null)).toBe("null");
   });
 
@@ -15,7 +16,7 @@ group("port-houston:check output never shows real values", () => {
     expect(out).toContain('visitId: "AAA999"');
     expect(out).toContain('lineId: "AAAA"');
     expect(out).toContain('cargoCutoff: "9999-99-99A99:99:99"');
-    expect(out).toContain("estLoad: <integer>");
+    expect(out).toContain("estLoad: <integer, 2 digits>");
     expect(out).not.toMatch(/DOB196|MAEU|2026/);
   });
 });
