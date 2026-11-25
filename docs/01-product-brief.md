@@ -18,9 +18,9 @@ Exporters hold the commercial relationship and the booking, but the operational 
 | Warehouse | Stuffs/loads containers | ❓ Later |
 
 ## POC scope (proposed)
-1. Exporter can sign in and add a booking (by booking number + port/terminal).
-2. Platform pulls data about that booking from the port/terminal API.
-3. Exporter sees a clear view of "what the port knows" — raw fields plus a friendly timeline.
+1. Exporter can sign in and add a booking by **booking number** (D-007).
+2. Platform pulls data about that booking from the **Port Houston** API (Barbours Cut and Bayport terminals) (D-006).
+3. Exporter sees the booking's **receiving window and cutoffs** clearly, plus whether the terminal has the booking on file (D-008).
 4. Data refreshes on a schedule; changes are visible (and possibly alerted).
 
 ## Out of scope (proposed, for now)

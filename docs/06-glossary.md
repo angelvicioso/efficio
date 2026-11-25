@@ -14,3 +14,7 @@
 | **Bill of Lading (B/L)** | Transport document issued by the carrier; also a lookup reference. |
 | **TOS** | Terminal Operating System — the software terminals use to manage operations (often the true source of port data). |
 | **Data aggregator** | A third-party company that collects terminal/carrier data and exposes it through one API. |
+| **Receiving window** | The period from ERD to cargo cutoff when the terminal accepts export containers for a vessel. Also called the "booking window" by the team. |
+| **Port Houston** | The public port authority that owns and operates Houston's two container terminals, **Barbours Cut** and **Bayport**. |
+| **Lynx** | Port Houston's web portal for customers, including a booking inquiry view. |
+| **GetBookingInquiry** | Port Houston API call that checks whether an export booking is on file in the terminal system and returns routing details. |

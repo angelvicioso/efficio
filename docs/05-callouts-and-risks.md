@@ -3,10 +3,13 @@
 ## Risks
 | ID | Risk | Impact | Mitigation idea | Status |
 |---|---|---|---|---|
-| R-001 | **Few ports/terminals offer public APIs.** Many publish data via web portals (often requiring login) or through third-party systems (e.g., terminal operating systems, port community systems). | Could block live data for the POC. | Confirm access early (Q-002); consider a data aggregator; build against a realistic mock first behind the adapter (D-003). | Open |
+| R-001 | **Few ports/terminals offer public APIs.** Many publish data via web portals (often requiring login) or through third-party systems (e.g., terminal operating systems, port community systems). | Could block live data for the POC. | Confirm access early (Q-002); consider a data aggregator; build against a realistic mock first behind the adapter (D-003). **2026-11-25:** Port Houston offers official APIs with registration (D-006), so this is much less likely for Houston. Still open until credentials arrive (Q-019). | Partly mitigated |
 | R-002 | **Data is at the terminal level, not the port level**, and formats differ per terminal. | One "port integration" may actually be several. | Start with one terminal; normalize to our own data model. | Open |
 | R-003 | **Booking vs. container identifiers.** Before gate-in, terminals know a booking; after, they track containers. | Tracking may break at gate-in if we only store booking #. | Capture container numbers once they appear in terminal data (Q-003). | Open |
 | R-004 | **Terms of use / scraping.** Pulling from terminal websites without an agreement may violate terms. | Legal/relationship risk. | Use official APIs, aggregators, or partner agreements only. | Open |
+| R-006 | **Receiving windows and cutoffs are usually set per vessel voyage, not per booking.** The booking inquiry reportedly returns "general routing details," which may give the vessel/voyage but not the dates themselves. | We may need a second lookup (the vessel schedule) to show the data from D-008. | Check the API docs once registered (S-013). Design the data model as booking → vessel voyage → receiving window and cutoffs. | Open |
+| R-007 | **"Booking not on file" is a normal early state.** The carrier sends the booking to the terminal some time after confirming it to the exporter. | Exporters may think the platform is broken, or that something is wrong with their booking. | Show "Not yet at terminal" clearly, keep checking automatically, and alert when it appears. | Open |
+| R-008 | **Port Houston's terms of use** may limit how the data is stored, shown or resold. | Could affect the business model. | Javier and Eduardo review the terms before building on live data (Q-019). | Open |
 | R-005 | **"Real-time" expectations.** Terminal data itself may only update periodically; rate limits apply. | Users may expect instant updates. | Define refresh target (Q-006); show "last updated" on every screen. | Open |
 
 ## Assumptions (to validate)
@@ -15,3 +18,4 @@
 | A-001 | Exporters already have the booking number from the carrier when they want to start tracking. | Q-003, Q-007 |
 | A-002 | The exporter's biggest pain is late discovery of cutoff/receiving changes and holds. | Q-004, Q-007 |
 | A-003 | A web app is acceptable for the POC. | Q-009 |
+| A-004 | "Booking window" means the terminal's receiving window, from ERD to cargo cutoff. | Q-018 |
