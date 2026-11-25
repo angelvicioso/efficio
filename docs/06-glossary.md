@@ -30,3 +30,6 @@
 | **Freight forwarder / NVOCC** | A company that books space with ocean carriers on behalf of exporters, sometimes under its own (house) booking number. |
 | **SCAC** | Standard Carrier Alpha Code: a 4-letter carrier code, e.g. MAEU (Maersk), MSCU (MSC). Efficio identifies carriers by SCAC. |
 | **Claimed / verified** | A company that added a booking itself is *claimed*; once the carrier confirms it's really on the booking, it's *verified* (P-001). |
+| **NSP** | Navis Smart Platform: the API layer over N4 (REST endpoints plus real-time event streaming). |
+| **Line / line operator** | N4's term for the ocean carrier on a vessel call. Each line has its own receiving window and cutoffs on the same vessel. |
+| **Empty pickup date** | Earliest date empties can be picked up for a vessel (`emptyPickup` in N4). |

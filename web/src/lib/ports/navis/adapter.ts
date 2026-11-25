@@ -5,10 +5,11 @@ import { EvpClient } from "./evpClient";
 /**
  * Live Port Houston adapter over the Navis N4 EVP API (D-010).
  *
- * Status: the token flow and paged queries are implemented. The booking and
- * vessel visit endpoints aren't in the access document, so mapping them into
- * receiving window and cutoffs waits on spike S-013 / Q-021.
- * `inventory/units` alone can't do it: before gate-in there are no units (R-010).
+ * Status:
+ *  - Done: token flow, paged queries, vessel visit -> receiving window/cutoffs mapping (vesselVisits.ts).
+ *  - Missing: the link from a booking to its vessel visit. GET /orders/bookings exists, but its
+ *    fields (and the predicate to filter by booking number + line) aren't in the documents we have.
+ *    Needs the Swagger UI or a sample response (Q-021, spike S-013).
  */
 export class NavisPortHoustonAdapter implements PortAdapter {
   readonly source = "navis-evp";
@@ -20,7 +21,7 @@ export class NavisPortHoustonAdapter implements PortAdapter {
     void ref;
     void this.client;
     throw new AdapterNotReadyError(
-      "Live Port Houston lookups need the N4 booking and vessel visit endpoints (spike S-013). Use PORT_ADAPTER=mock for now.",
+      "Live Port Houston lookups need the field names of N4's /orders/bookings response to link a booking to its vessel visit (spike S-013). Use PORT_ADAPTER=mock for now.",
     );
   }
 }
