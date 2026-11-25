@@ -27,6 +27,29 @@ export interface VesselVisit {
   etd: string | null;
 }
 
+/**
+ * Where a container is in the export flow (S-041). Each stage includes the ones before it:
+ * a container loaded on the vessel was also picked up empty and delivered full.
+ */
+export type ContainerStage = "EMPTY_PICKED_UP" | "FULL_AT_TERMINAL" | "LOADED_ON_VESSEL";
+
+export interface Container {
+  /** ISO 6346 container number, e.g. MSKU1234565. */
+  number: string;
+  /** ISO size/type code, e.g. 45G1 (40' high cube). */
+  sizeType: string;
+  stage: ContainerStage;
+  emptyPickedUpAt: string | null;
+  fullGateInAt: string | null;
+  loadedAt: string | null;
+}
+
+/** What was booked: e.g. 4 × 45G1. */
+export interface EquipmentLine {
+  sizeType: string;
+  quantity: number;
+}
+
 /** One reading of a booking from a port source at a point in time. */
 export interface PortBookingSnapshot {
   source: string;
@@ -39,6 +62,10 @@ export interface PortBookingSnapshot {
   /** Earliest receiving date: when the receiving window opens. */
   receivingOpensAt: string | null;
   cutoffs: Cutoff[];
+  /** Containers booked, by size/type. Optional: older snapshots don't have it. */
+  equipment?: EquipmentLine[];
+  /** Containers the terminal knows for this booking (picked up empty or later). */
+  containers?: Container[];
   /** The untranslated response, so exporters can see exactly what the port says (S-002). */
   raw: unknown;
   fetchedAt: string;
@@ -55,4 +82,23 @@ export const CUTOFF_LABELS: Record<CutoffKind, string> = {
 export const TERMINAL_LABELS: Record<Terminal, string> = {
   BAYPORT: "Bayport",
   BARBOURS_CUT: "Barbours Cut",
+};
+
+/** Friendly names for common ISO size/type codes. */
+export const SIZE_TYPE_LABELS: Record<string, string> = {
+  "22G1": "20' standard",
+  "42G1": "40' standard",
+  "45G1": "40' high cube",
+  "45R1": "40' reefer",
+  "22R1": "20' reefer",
+};
+
+export function sizeTypeLabel(code: string): string {
+  return SIZE_TYPE_LABELS[code] ?? code;
+}
+
+export const CONTAINER_STAGE_LABELS: Record<ContainerStage, string> = {
+  EMPTY_PICKED_UP: "Empty picked up",
+  FULL_AT_TERMINAL: "Loaded, at terminal",
+  LOADED_ON_VESSEL: "On vessel",
 };

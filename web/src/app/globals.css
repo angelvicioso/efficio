@@ -196,3 +196,62 @@ h3 { font-size: 0.95rem; margin: 1.25rem 0 0.5rem; }
 .next-cutoff { margin: 0.25rem 0 0.75rem; }
 .vessel-card:target { outline: 2px solid var(--accent); }
 @media (max-width: 560px) { .vessel-summary { text-align: left; } }
+
+/* ---------- Collapsible groups (Vessels, Carriers) ---------- */
+:root { --bar-out: #9db8e3; --bar-in: #3f7fd6; --bar-loaded: #1d4f99; }
+@media (prefers-color-scheme: dark) { :root { --bar-out: #34507e; --bar-in: #4f8fe8; --bar-loaded: #a9c8f7; } }
+.group-card { padding: 0; }
+.group-card > summary { list-style: none; cursor: pointer; padding: 1rem 1rem 1rem 2.25rem; position: relative; border-radius: 10px; }
+.group-card > summary::-webkit-details-marker, .booking-item > summary::-webkit-details-marker { display: none; }
+.group-card > summary::before, .booking-item > summary::before {
+  content: "▸"; position: absolute; left: 0.9rem; top: 1.05rem; color: var(--muted);
+}
+.group-card[open] > summary::before, .booking-item[open] > summary::before { content: "▾"; }
+.group-card > summary:hover { background: var(--bg); }
+.group-card > summary:focus-visible, .booking-item > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.group-card[open] > summary { border-bottom: 1px solid var(--border); border-radius: 10px 10px 0 0; }
+.group-head { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.group-name { font-size: 1.15rem; margin: 0 0 0.2rem; }
+.group-stats { display: flex; flex-direction: column; gap: 0.35rem; min-width: 260px; max-width: 420px; flex: 1; }
+.group-count { font-weight: 700; }
+.group-card:target { outline: 2px solid var(--accent); }
+
+.counts { display: flex; flex-direction: column; gap: 0.25rem; }
+.counts-text { font-size: 0.88rem; }
+.counts-compact .counts-text { font-size: 0.78rem; }
+.counts-left { color: var(--amber-fg); font-weight: 600; }
+.bar { position: relative; height: 8px; border-radius: 999px; background: var(--grey-bg); overflow: hidden; }
+.bar > span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; }
+.bar-out { background: var(--bar-out); }
+.bar-in { background: var(--bar-in); }
+.bar-loaded { background: var(--bar-loaded); }
+.legend { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; margin: 0.5rem 0 0; }
+.swatch { display: inline-block; width: 0.8rem; height: 0.8rem; border-radius: 3px; margin-left: 0.4rem; }
+.swatch:first-child { margin-left: 0; }
+
+.booking-list { padding: 0.5rem 1rem 1rem; }
+.booking-item { border-bottom: 1px solid var(--border); }
+.booking-item:last-child { border-bottom: none; }
+.booking-item > summary {
+  list-style: none; cursor: pointer; position: relative; padding: 0.7rem 0.5rem 0.7rem 1.5rem;
+  display: grid; grid-template-columns: minmax(150px, 1.2fr) auto minmax(130px, 1fr) minmax(200px, 1.6fr); gap: 0.75rem; align-items: center;
+}
+.booking-item > summary::before { left: 0.3rem; top: 0.8rem; }
+.booking-item > summary:hover { background: var(--bg); }
+.bi-main { display: flex; flex-direction: column; }
+.booking-link-text { font-weight: 600; color: var(--accent); }
+.booking-detail { padding: 0.25rem 0.5rem 1rem 1.5rem; }
+.bd-top { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
+.bd-top .pill { margin-top: 0; }
+table.containers th, table.containers td { font-size: 0.85rem; padding: 0.45rem 0.6rem; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.02em; }
+.stage { font-size: 0.75rem; font-weight: 600; padding: 0.1rem 0.5rem; border-radius: 999px; white-space: nowrap; }
+.stage-empty-picked-up { background: var(--grey-bg); color: var(--grey-fg); }
+.stage-full-at-terminal { background: var(--blue-bg); color: var(--blue-fg); }
+.stage-loaded-on-vessel { background: var(--green-bg); color: var(--green-fg); }
+@media (max-width: 760px) {
+  .booking-item > summary { grid-template-columns: 1fr auto; }
+  .bi-cutoff, .bi-counts { grid-column: 1 / -1; }
+  .group-stats { min-width: 0; }
+}
+table.containers th, table.containers td { white-space: nowrap; }

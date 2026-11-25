@@ -29,8 +29,9 @@ Stories are **Draft** until their blocking questions are answered and acceptance
 | ID | Story | Blocked by | Status |
 |---|---|---|---|
 | S-040 | As an **exporter**, I want to **group my bookings by vessel** and see how many bookings and containers I have on each, so I can plan around one sailing. | Q-032 | **Built (mock)**: Vessels tab groups bookings by vessel (across carriers), with schedule, next cutoff and status counts. Container totals wait on Q-032 and booking quantities from N4 |
-| S-041 | As an **exporter**, I want to see **container progress per booking**: booked → empties picked up → loaded containers dropped at the terminal → loaded on the vessel, so I know what's left to deliver before the cutoff. | Q-033, S-013 | Draft |
-| S-042 | As an **exporter**, I want the **list of container numbers** on each booking with their status and times, so I can match them to my trucker's moves. | S-013 | Draft |
+| S-041 | As an **exporter**, I want to see **container progress per booking**: booked → empties picked up → loaded containers dropped at the terminal → loaded on the vessel, so I know what's left to deliver before the cutoff. | Q-033, S-013 | **Built (mock)**: per booking, vessel and carrier, with a progress bar and "still to deliver" (D-020). Live data waits on N4 container/gate fields (Q-021) |
+| S-042 | As an **exporter**, I want the **list of container numbers** on each booking with their status and times, so I can match them to my trucker's moves. | S-013 | **Built (mock)**: expand a booking to see its containers, stages and times |
+| S-043 | As an **exporter**, I want to **see my bookings grouped by carrier**, with booking and container totals, so I can manage each carrier relationship. | — | **Built (mock)**: Carriers tab (hidden for carrier organizations) |
 
 ### E-04 · Multi-party collaboration (P-001)
 | ID | Story | Blocked by | Status |

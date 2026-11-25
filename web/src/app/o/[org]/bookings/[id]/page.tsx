@@ -11,6 +11,8 @@ import { refreshBookingAction, removeBookingAction, removePartyAction, verifyPar
 import { AccessBadge } from "../../../../AccessBadge";
 import { PARTY_ROLE_LABELS } from "@/lib/bookings";
 import { carrierName } from "@/lib/domain/carriers";
+import { ContainerCounts, ContainerTable } from "../../BookingGroups";
+import { containerProgress } from "@/lib/domain/containers";
 
 export const dynamic = "force-dynamic";
 
@@ -144,6 +146,16 @@ export default async function BookingPage({ params }: { params: Promise<{ org: s
             </dl>
           </section>
         </div>
+      )}
+
+      {snap?.onFile && (
+        <section className="card">
+          <h2>Containers</h2>
+          <div className="section">
+            <ContainerCounts p={containerProgress(snap)} />
+          </div>
+          <ContainerTable snap={snap} />
+        </section>
       )}
 
       {snap && (

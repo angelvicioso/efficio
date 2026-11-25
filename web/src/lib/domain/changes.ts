@@ -1,4 +1,5 @@
 import { CUTOFF_LABELS, type PortBookingSnapshot } from "./types";
+import { containerProgress } from "./containers";
 
 /** A field that differs between two snapshots, for "what changed" (S-020). */
 export interface FieldChange {
@@ -15,6 +16,13 @@ function keyFields(s: PortBookingSnapshot): Record<string, string | null> {
     "Receiving opens (ERD)": s.receivingOpensAt,
   };
   for (const c of s.cutoffs) fields[CUTOFF_LABELS[c.kind]] = c.at;
+  if (s.equipment || s.containers) {
+    const p = containerProgress(s);
+    fields["Containers booked"] = String(p.booked);
+    fields["Empties picked up"] = String(p.pickedUp);
+    fields["Loaded, at terminal"] = String(p.atTerminal);
+    fields["On vessel"] = String(p.loaded);
+  }
   return fields;
 }
 
