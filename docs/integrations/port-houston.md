@@ -79,11 +79,22 @@ The generic guide shows 30-minute access tokens **with** refresh tokens (12h). P
 
 **Original callout (R-010):** `inventory/units` only lists containers the terminal already knows about. **Before the exporter's container arrives, there may be no units for the booking.** That's exactly the period the receiving window covers, so units alone can't support the POC's first feature. We need the booking and vessel visit data too.
 
+## Going live: checklist
+| # | Step | Owner | Status |
+|---|---|---|---|
+| 1 | **Permission**: confirm Efficio may show Port Houston data to exporters who use it, and that the credentials cover Barbours Cut as well as Bayport; ask about rate limits and whether they restrict access by IP address (Q-021) | Orlando | Open |
+| 2 | **First real call**: put the credentials in `web/.env.local` and run `npm run port-houston:check` on a laptop. It prints field names and value *formats* only, never real values, so the output is safe to share | Eduardo | Ready to run |
+| 3 | **Field mapping**: from the check's output (or the Swagger UI / sample responses), map bookings → vessel visit → dates, and containers / gate moves → container progress | Claude | Waits on 2 |
+| 4 | **Build the live connection** (`navis/adapter.ts`) with tests based on the real shapes, including tests that one customer never gets another's data (R-017) | Claude | Waits on 3 |
+| 5 | **Try it locally** with `PORT_ADAPTER=navis` against real bookings Orlando knows | Eduardo + Orlando | Waits on 4 |
+| 6 | **Off-site backups** before real data goes on the hosted copy (D-022) | Claude + Eduardo | Open |
+| 7 | **Switch Render to live**: add `PORT_HOUSTON_EVP_*` as secrets in Render, set `PORT_ADAPTER=navis`, remove sample data | Eduardo | Waits on 1, 5, 6 |
+
 ## Spike checklist (S-013)
 - [x] Confirm who owns these credentials: Orlando, for Efficio (D-010)
 - [ ] Orlando: get the API reference, coverage, permitted use and rate limits from the issuer (Q-021)
-- [ ] Store the client secret in a password manager; create a local `.env`
-- [ ] Get a token; check scope and expiry
+- [ ] Store the client secret in a password manager; create `web/.env.local`
+- [ ] Run `npm run port-houston:check`: gets a token and calls each endpoint once
 - [x] Find the endpoints for **bookings** and **vessel visits**, and the vessel visit field names for ERD and cutoffs (from the developer guide)
 - [ ] Get the **Swagger UI** (the guide refers to it for full details) or sample responses for `/orders/bookings`, `/inventory/units`, `/road/gatetransactions`, `/inventory/moveevents` (Q-021)
 - [ ] Confirm `lines[].lineId` uses SCAC codes (MAEU) or Port Houston's own line codes, and the date format

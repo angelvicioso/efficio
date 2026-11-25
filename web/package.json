@@ -12,7 +12,8 @@
     "start": "next start",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "demo:seed": "tsx --tsconfig tsconfig.json scripts/seed-demo.ts"
+    "demo:seed": "tsx --tsconfig tsconfig.json scripts/seed-demo.ts",
+    "port-houston:check": "tsx --tsconfig tsconfig.json scripts/port-houston-check.ts"
   },
   "dependencies": {
     "next": "^16.4.6",
