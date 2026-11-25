@@ -30,6 +30,8 @@ Questions for the team. Each question has an **Owner** (see [Team](00-team.md)):
 | Q-029 | 🟠 | Orlando | **Who can see a booking's terminal data today?** For example, can anyone with a booking number look it up on Port Houston's Lynx portal, or do you need an account linked to the booking? | Decides how much to worry about an exporter adding a booking that isn't theirs (the trust problem in P-001). | |
 | Q-030 | 🟠 | Orlando | **How often do exporters book through a freight forwarder/NVOCC instead of directly with the carrier?** Do they then have a different (house) booking number? | Forwarders are a sixth party type; this affects how bookings are identified and verified. | |
 | Q-031 | 🟢 | Orlando | **Which carriers should be in the carrier dropdown?** The app has a starter list of 11 major lines (Maersk, MSC, CMA CGM, Hapag-Lloyd, ONE, COSCO, Evergreen, OOCL, Yang Ming, HMM, ZIM). Which call Port Houston, and who's missing? Also: is picking the carrier natural for exporters, or annoying? | Keeps the dropdown short and correct (D-015). | |
+| Q-032 | 🟠 | Eduardo | **"Total containers on the vessel": yours or everyone's?** (a) The total across **your** bookings on that vessel. (b) The **whole vessel's** load, all shippers. | (a) is your own data and doable. (b) is other companies' data: the terminal likely won't allow sharing it with exporters (R-008), and it would reveal competitors' volumes. | |
+| Q-033 | 🟠 | Orlando | **Where do Houston exporters pick up empty containers?** From the Port Houston terminals (Barbours Cut/Bayport), or from off-dock depots and container yards? Does it vary by carrier? | Port data only covers empties released **from the terminal**. Empties from a depot would need carrier or depot data. | |
 
 ## Answered
 

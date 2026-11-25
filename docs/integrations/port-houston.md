@@ -50,4 +50,6 @@ Authorization: Bearer <token>
 - [ ] Find the endpoints for **bookings** and **vessel visits**; record the field names for ERD/begin receive and the cutoffs
 - [ ] Try a known booking number end to end: booking → vessel visit → dates
 - [ ] Check coverage: Bayport only, or Barbours Cut as well? (Q-021)
+- [ ] Booking **line items**: equipment type and **quantity booked** (e.g. 10 × 40' high cube), plus the counts of **empties released** and **loads received** against the booking, if N4 exposes them (S-041)
+- [ ] `inventory/units` filtered by booking: container numbers, full/empty, where each is (yard, gated out, loaded), and gate-in/gate-out times (S-041, S-042). Find the booking field name for `predicate`.
 - [ ] Note the rate limits, paging behavior and error formats
