@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { accountService } from "@/lib/service";
 import type { Organization, User } from "./accounts";
 import { canAccessOrg, canManageTeam } from "./permissions";
+import { publicBaseUrl } from "@/lib/publicUrl";
 
 /**
  * Request-level auth helpers. Every page AND every server action calls one of the
@@ -69,7 +70,8 @@ export function homePath(user: User): string {
 
 /** Absolute base URL for invite links, from the incoming request. */
 export async function baseUrl(): Promise<string> {
-  if (process.env.EFFICIO_BASE_URL) return process.env.EFFICIO_BASE_URL.replace(/\/$/, "");
+  const configured = publicBaseUrl();
+  if (configured) return configured;
   const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
   const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");

@@ -7,6 +7,23 @@ A platform that brings together the entities involved in moving export cargo —
 **Primary user (POC):** the Exporter.
 **First capability:** an exporter enters a booking and sees, in near-real time, what the port/terminal is reporting about it.
 
+## Try it now
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/angelvicioso/vicious/tree/claude/logistics-platform-poc-x95492?quickstart=1)
+
+Click the button (you need a GitHub account with access to this repo). GitHub builds a private cloud copy of the app, fills it with **simulated** data and opens it in your browser: first start takes about 2–3 minutes. Then sign in with a demo login:
+
+| Login | Who | What you'll see |
+|---|---|---|
+| `admin@efficio.demo` | Efficio super admin | Every organization |
+| `ann@acme.demo` | Acme Exports admin | 4 bookings, Team page |
+| `bob@acme.demo` | Acme Exports member | Same bookings, no Team page |
+| `gia@globex.demo` | Globex Shipping admin | 2 bookings (shares HOU1002 with Acme, but never sees Acme) |
+| `max@maersk.demo` | Maersk Line (carrier) | Every Maersk booking; can verify Acme and Globex |
+
+Password for all demo logins: `efficio-demo-2026`. **Demo data only**: it's created in an empty database and never with live Port Houston data.
+
+The first time, GitHub may ask you to confirm creating the codespace. When you're done, stop it from github.com/codespaces so it doesn't use up your free monthly hours.
+
 ## Run the app
 See [web/README.md](web/README.md). Short version: `cd web && npm install && npm run dev`, then open http://localhost:3000 and try booking `HOU1002`.
 

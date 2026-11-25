@@ -12,7 +12,7 @@ npm run dev          # http://localhost:3000
 ```
 
 ### First run
-Open the app and you'll land on **/setup**, which creates the first **super admin**. That page disappears once any account exists. From there:
+Either run `npm run demo:seed` for ready-made demo logins (below), or open the app and you'll land on **/setup**, which creates the first **super admin**. That page disappears once any account exists. From there:
 1. **All organizations** → create a customer organization (name, type, email domains).
 2. On its **Team** page, create an invite link for their first admin and send it to them.
 3. They open the link, set a password, and land in their own workspace.
@@ -51,6 +51,19 @@ By default the app uses **simulated Port Houston data** (`PORT_ADAPTER=mock`). T
 Other commands: `npm test` (unit tests), `npm run typecheck`, `npm run build && npm start`.
 
 > **Upgrading?** From the logins version, the database upgrades itself on startup: accounts are kept and simulated bookings are reset. From the pre-login version, delete `web/.data/efficio.db`.
+
+## Demo data
+`npm run demo:seed` fills an **empty** database with demo organizations, logins and simulated bookings (Codespaces does this automatically):
+
+| Login | Who | What you'll see |
+|---|---|---|
+| `admin@efficio.demo` | Efficio super admin | Every organization |
+| `ann@acme.demo` | Acme Exports admin | 4 bookings, Team page |
+| `bob@acme.demo` | Acme Exports member | Same bookings, no Team page |
+| `gia@globex.demo` | Globex Shipping admin | 2 bookings (shares HOU1002 with Acme, but never sees Acme) |
+| `max@maersk.demo` | Maersk Line (carrier) | Every Maersk booking; can verify Acme and Globex |
+
+Password for all demo logins: `efficio-demo-2026`. **Demo data only**: it's created in an empty database and never with live Port Houston data.
 
 ## Share a quick demo link
 Give someone a temporary link to the app running on **your** computer, with nothing to install on their side.
