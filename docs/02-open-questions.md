@@ -31,6 +31,7 @@ Questions for the team. Each question has an **Owner** (see [Team](00-team.md)):
 | Q-031 | 🟢 | Orlando | **Which carriers should be in the carrier dropdown?** The app has a starter list of 11 major lines (Maersk, MSC, CMA CGM, Hapag-Lloyd, ONE, COSCO, Evergreen, OOCL, Yang Ming, HMM, ZIM). Which call Port Houston, and who's missing? Also: is picking the carrier natural for exporters, or annoying? | Keeps the dropdown short and correct (D-015). | |
 | Q-033 | 🟠 | Orlando | **Where do Houston exporters pick up empty containers?** From the Port Houston terminals (Barbours Cut/Bayport), or from off-dock depots and container yards? Does it vary by carrier? | Port data only covers empties released **from the terminal**. Empties from a depot would need carrier or depot data. | |
 | Q-036 | 🟢 | Orlando | **Do exporters need a phone app (App Store/Google Play), or is a mobile website enough?** A cheap middle step is "Add to Home Screen" with an app icon (no app store). | A native app is a big extra cost; most of the value (alerts) can come by email or text first. | |
+| Q-037 | 🔴 | Orlando | **Ask the Port Houston contact to confirm client `pha-efficio` is active (realm `phaprod`) and to send the client secret as text, or reset it.** Share it privately (password manager or secure message). | The first real call was rejected with "Invalid client or Invalid client credentials" (2026-11-25). The secret was only available as an image, and the credentials may be old. Blocks all live data. | |
 
 ## Answered
 
