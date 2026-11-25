@@ -8,7 +8,10 @@ interface Scenario {
   description: string;
   terminal: Terminal;
   carrierCode: string;
+  /** The vessel call; bookings with the same visitId are on the same vessel. */
+  visitId: string;
   vesselName: string;
+  /** This carrier's voyage number on the vessel. */
   voyage: string;
   /** Offsets from "now", in ms. */
   opensIn: number;
@@ -22,11 +25,15 @@ interface Scenario {
  * NOTE: the `raw` shape below is Efficio's own placeholder, NOT the real Navis N4 format.
  */
 export const MOCK_SCENARIOS: Record<string, Scenario> = {
-  HOU1001: { description: "Receiving not open yet", terminal: "BAYPORT", carrierCode: "MSCU", vesselName: "MSC AURORA", voyage: "FA548W", opensIn: 2 * DAY + 5 * HOUR, cargoCutoffIn: 6 * DAY, etdIn: 8 * DAY },
-  HOU1002: { description: "Receiving open", terminal: "BAYPORT", carrierCode: "MAEU", vesselName: "MAERSK HOUSTON", voyage: "247E", opensIn: -1 * DAY, cargoCutoffIn: 4 * DAY + 3 * HOUR, etdIn: 6 * DAY },
-  HOU1003: { description: "Closing soon", terminal: "BARBOURS_CUT", carrierCode: "HLCU", vesselName: "HAMBURG EXPRESS", voyage: "033W", opensIn: -4 * DAY, cargoCutoffIn: 20 * HOUR, etdIn: 2 * DAY },
-  HOU1004: { description: "Receiving closed", terminal: "BAYPORT", carrierCode: "CMDU", vesselName: "CMA CGM TEXAS", voyage: "0FL3SW1MA", opensIn: -7 * DAY, cargoCutoffIn: -1 * DAY, etdIn: 1 * DAY },
-  HOU1005: { description: "Cutoff moves earlier on each refresh", terminal: "BAYPORT", carrierCode: "ONEY", vesselName: "ONE GULF", voyage: "012W", opensIn: -2 * DAY, cargoCutoffIn: 5 * DAY, etdIn: 7 * DAY },
+  HOU1001: { description: "Receiving not open yet", terminal: "BAYPORT", carrierCode: "MSCU", visitId: "MSCAUR548", vesselName: "MSC AURORA", voyage: "FA548W", opensIn: 2 * DAY + 5 * HOUR, cargoCutoffIn: 6 * DAY, etdIn: 8 * DAY },
+  HOU1002: { description: "Receiving open", terminal: "BAYPORT", carrierCode: "MAEU", visitId: "MAEHOU247", vesselName: "MAERSK HOUSTON", voyage: "247E", opensIn: -1 * DAY, cargoCutoffIn: 4 * DAY + 3 * HOUR, etdIn: 6 * DAY },
+  HOU1003: { description: "Closing soon", terminal: "BARBOURS_CUT", carrierCode: "HLCU", visitId: "HAMEXP033", vesselName: "HAMBURG EXPRESS", voyage: "033W", opensIn: -4 * DAY, cargoCutoffIn: 20 * HOUR, etdIn: 2 * DAY },
+  HOU1004: { description: "Receiving closed", terminal: "BAYPORT", carrierCode: "CMDU", visitId: "CMATEX0FL", vesselName: "CMA CGM TEXAS", voyage: "0FL3SW1MA", opensIn: -7 * DAY, cargoCutoffIn: -1 * DAY, etdIn: 1 * DAY },
+  HOU1005: { description: "Cutoff moves earlier on each refresh", terminal: "BAYPORT", carrierCode: "ONEY", visitId: "ONEGUL012", vesselName: "ONE GULF", voyage: "012W", opensIn: -2 * DAY, cargoCutoffIn: 5 * DAY, etdIn: 7 * DAY },
+  // More bookings on MAERSK HOUSTON, for the vessel view (S-040). HOU1007 is an MSC booking on the
+  // same ship (carriers share vessels in alliances), with MSC's own voyage number and cutoff.
+  HOU1006: { description: "Another booking on MAERSK HOUSTON", terminal: "BAYPORT", carrierCode: "MAEU", visitId: "MAEHOU247", vesselName: "MAERSK HOUSTON", voyage: "247E", opensIn: -1 * DAY, cargoCutoffIn: 4 * DAY + 3 * HOUR, etdIn: 6 * DAY },
+  HOU1007: { description: "MSC booking on MAERSK HOUSTON", terminal: "BAYPORT", carrierCode: "MSCU", visitId: "MAEHOU247", vesselName: "MAERSK HOUSTON", voyage: "FX247E", opensIn: -1 * DAY, cargoCutoffIn: 3 * DAY + 15 * HOUR, etdIn: 6 * DAY },
 };
 
 /**
@@ -37,7 +44,10 @@ export class MockPortHoustonAdapter implements PortAdapter {
   readonly source = "mock";
   readonly displayName = "Port Houston (simulated)";
   private lookups = new Map<string, number>();
-  /** Each booking's dates are anchored to its first lookup (rounded to the hour) so refreshes are stable. */
+  /**
+   * Dates are anchored to the first lookup of any booking on the same vessel (rounded to the hour),
+   * so refreshes are stable and every booking on a vessel shares one schedule.
+   */
   private anchors = new Map<string, number>();
 
   constructor(private readonly now: () => Date = () => new Date()) {}
@@ -66,10 +76,10 @@ export class MockPortHoustonAdapter implements PortAdapter {
       };
     }
 
-    let t = this.anchors.get(key);
+    let t = this.anchors.get(scenario.visitId);
     if (t === undefined) {
       t = Math.floor(fetchedAt.getTime() / HOUR) * HOUR;
-      this.anchors.set(key, t);
+      this.anchors.set(scenario.visitId, t);
     }
     // HOU1005 demonstrates change detection (S-020): the cutoff moves 12h earlier on each of the
     // next two lookups, then settles (so frequent automatic refreshes don't push it into the past).
@@ -85,7 +95,7 @@ export class MockPortHoustonAdapter implements PortAdapter {
       terminal: scenario.terminal,
       carrierCode: scenario.carrierCode,
       vesselVisit: {
-        id: `${scenario.vesselName.replace(/\W/g, "").slice(0, 6)}-${scenario.voyage}`,
+        id: scenario.visitId,
         vesselName: scenario.vesselName,
         voyage: scenario.voyage,
         eta: at(scenario.etdIn - 1 * DAY),

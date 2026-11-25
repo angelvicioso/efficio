@@ -186,3 +186,13 @@ h3 { font-size: 0.95rem; margin: 1.25rem 0 0.5rem; }
   .add-fields select { max-width: none; }
 }
 .no-margin { margin: 0; }
+
+/* ---------- Vessels ---------- */
+.vessel-card { scroll-margin-top: 1rem; }
+.vessel-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
+.vessel-name { font-size: 1.2rem; margin: 0 0 0.2rem; }
+.vessel-summary { text-align: right; }
+.vessel-count { font-weight: 700; font-size: 1.05rem; }
+.next-cutoff { margin: 0.25rem 0 0.75rem; }
+.vessel-card:target { outline: 2px solid var(--accent); }
+@media (max-width: 560px) { .vessel-summary { text-align: left; } }

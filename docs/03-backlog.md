@@ -28,7 +28,7 @@ Stories are **Draft** until their blocking questions are answered and acceptance
 ### E-05 · Vessel & container progress
 | ID | Story | Blocked by | Status |
 |---|---|---|---|
-| S-040 | As an **exporter**, I want to **group my bookings by vessel** and see how many bookings and containers I have on each, so I can plan around one sailing. | Q-032 | Draft |
+| S-040 | As an **exporter**, I want to **group my bookings by vessel** and see how many bookings and containers I have on each, so I can plan around one sailing. | Q-032 | **Built (mock)**: Vessels tab groups bookings by vessel (across carriers), with schedule, next cutoff and status counts. Container totals wait on Q-032 and booking quantities from N4 |
 | S-041 | As an **exporter**, I want to see **container progress per booking**: booked → empties picked up → loaded containers dropped at the terminal → loaded on the vessel, so I know what's left to deliver before the cutoff. | Q-033, S-013 | Draft |
 | S-042 | As an **exporter**, I want the **list of container numbers** on each booking with their status and times, so I can match them to my trucker's moves. | S-013 | Draft |
 

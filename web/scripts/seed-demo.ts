@@ -43,7 +43,14 @@ async function main() {
   const maersk = accounts.createOrganization({ name: "Maersk Line", type: "ocean_carrier", carrierCode: "MAEU", domains: ["maersk.demo"] });
   await join(maersk.id, "max@maersk.demo", "Max (Maersk admin)", "admin");
 
-  for (const [carrierCode, bookingNumber] of [["MSCU", "HOU1001"], ["MAEU", "HOU1002"], ["HLCU", "HOU1003"], ["ONEY", "HOU1005"]]) {
+  for (const [carrierCode, bookingNumber] of [
+    ["MSCU", "HOU1001"],
+    ["MAEU", "HOU1002"],
+    ["HLCU", "HOU1003"],
+    ["ONEY", "HOU1005"],
+    ["MAEU", "HOU1006"],
+    ["MSCU", "HOU1007"],
+  ]) {
     await bookings.add(acme, { carrierCode, bookingNumber }, ann.id);
   }
   for (const [carrierCode, bookingNumber] of [["MAEU", "HOU1002"], ["CMDU", "HOU1004"]]) {
@@ -52,7 +59,7 @@ async function main() {
 
   console.log(`Demo data added. Every demo login uses the password: ${DEMO_PASSWORD}
   admin@efficio.demo   super admin (sees every organization)
-  ann@acme.demo        Acme Exports admin    (4 bookings)
+  ann@acme.demo        Acme Exports admin    (6 bookings; 3 on MAERSK HOUSTON)
   bob@acme.demo        Acme Exports member
   gia@globex.demo      Globex Shipping admin (2 bookings; shares HOU1002 with Acme)
   max@maersk.demo      Maersk Line (carrier) sees every Maersk booking, can verify Acme and Globex`);

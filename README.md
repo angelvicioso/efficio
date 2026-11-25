@@ -15,7 +15,7 @@ Click the button (you need a GitHub account with access to this repo). GitHub bu
 | Login | Who | What you'll see |
 |---|---|---|
 | `admin@efficio.demo` | Efficio super admin | Every organization |
-| `ann@acme.demo` | Acme Exports admin | 4 bookings, Team page |
+| `ann@acme.demo` | Acme Exports admin | 6 bookings (3 on MAERSK HOUSTON: see the Vessels tab), Team page |
 | `bob@acme.demo` | Acme Exports member | Same bookings, no Team page |
 | `gia@globex.demo` | Globex Shipping admin | 2 bookings (shares HOU1002 with Acme, but never sees Acme) |
 | `max@maersk.demo` | Maersk Line (carrier) | Every Maersk booking; can verify Acme and Globex |

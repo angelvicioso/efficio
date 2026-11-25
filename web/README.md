@@ -45,7 +45,9 @@ By default the app uses **simulated Port Houston data** (`PORT_ADAPTER=mock`). T
 | `HOU1002` | Maersk | Receiving open |
 | `HOU1003` | Hapag-Lloyd | Closing soon (under 48h) |
 | `HOU1004` | CMA CGM | Receiving closed |
-| `HOU1005` | ONE | Cutoff moves 12h earlier on every refresh (shows change detection) |
+| `HOU1005` | ONE | Cutoff moves 12h earlier on the next two refreshes (shows change detection) |
+| `HOU1006` | Maersk | Another booking on MAERSK HOUSTON (vessel view) |
+| `HOU1007` | MSC | MSC booking on MAERSK HOUSTON with its own, earlier cutoff (carriers share vessels) |
 | anything else, or the wrong carrier | | Not yet at terminal |
 
 Other commands: `npm test` (unit tests), `npm run typecheck`, `npm run build && npm start`.
@@ -58,7 +60,7 @@ Other commands: `npm test` (unit tests), `npm run typecheck`, `npm run build && 
 | Login | Who | What you'll see |
 |---|---|---|
 | `admin@efficio.demo` | Efficio super admin | Every organization |
-| `ann@acme.demo` | Acme Exports admin | 4 bookings, Team page |
+| `ann@acme.demo` | Acme Exports admin | 6 bookings (3 on MAERSK HOUSTON: see the Vessels tab), Team page |
 | `bob@acme.demo` | Acme Exports member | Same bookings, no Team page |
 | `gia@globex.demo` | Globex Shipping admin | 2 bookings (shares HOU1002 with Acme, but never sees Acme) |
 | `max@maersk.demo` | Maersk Line (carrier) | Every Maersk booking; can verify Acme and Globex |

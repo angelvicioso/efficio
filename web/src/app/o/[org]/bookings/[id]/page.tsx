@@ -126,7 +126,14 @@ export default async function BookingPage({ params }: { params: Promise<{ org: s
               <dd>{snap.terminal ? TERMINAL_LABELS[snap.terminal] : "—"}</dd>
               <dt>Vessel / voyage</dt>
               <dd>
-                {snap.vesselVisit ? `${snap.vesselVisit.vesselName} / ${snap.vesselVisit.voyage ?? "—"}` : "—"}
+                {snap.vesselVisit ? (
+                  <>
+                    <Link href={`/o/${org.slug}/vessels#vessel-${snap.vesselVisit.id}`}>{snap.vesselVisit.vesselName}</Link> /{" "}
+                    {snap.vesselVisit.voyage ?? "—"}
+                  </>
+                ) : (
+                  "—"
+                )}
               </dd>
               <dt>Vessel ETA</dt>
               <dd>{formatHouston(snap.vesselVisit?.eta)}</dd>
