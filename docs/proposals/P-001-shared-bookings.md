@@ -1,6 +1,6 @@
 # P-001: Shared Bookings Across Organizations
 
-_Status: **Proposed**, awaiting team decision · Author: Claude (business analyst) · Raised by: Eduardo · 2026-11-25_
+_Status: **Accepted** 2026-11-25 (D-015), built except role-based field filtering and private notes · Author: Claude (business analyst) · Raised by: Eduardo_
 
 ## The problem
 One exporter books with several carriers, and each carrier has many exporters as customers. The same booking matters to several companies at once (the exporter, the carrier, and later the trucker, terminal and warehouse). Each company should see **only the bookings it is part of**, and within those, **only the data meant for its role**.
@@ -76,7 +76,16 @@ Many exporters don't book with the carrier directly. A **freight forwarder or NV
 
 **Recommendation:** make the data model change **now**, while there's no real data and only one screen depends on it. Role-based field filtering and verification can wait until carriers actually join.
 
-## Decisions needed
+## What was built (2026-11-25)
+- Shared `bookings` keyed by carrier + booking number, `booking_parties` with role and claimed/verified status, snapshots shared by all parties.
+- Exporters (and truckers, warehouses, forwarders) add a booking by **carrier + number** and are attached as **claimed**.
+- **Carrier organizations** are linked to one carrier code, automatically see every booking under it, and can **verify** or **remove** the companies on it. Only the carrier sees the list of companies.
+- Each party sees update history only **from when it joined**, so it can't tell someone else was tracking the booking first.
+- A booking is deleted once nobody follows it (kept while its carrier is on Efficio).
+
+**Not built yet:** the role-based field filtering from the matrix (S-034, waits on Q-028; today every party sees port data only) and each company's private notes and references (S-035).
+
+## Decisions (original list)
 1. Adopt this model? (Eduardo, Q-027)
 2. Q-017: carrier required when adding a booking. Recommended: **yes**, because it's now part of what identifies a booking.
 3. Q-028 (visibility matrix), Q-029 (who can see terminal data today) and Q-030 (forwarders), all for Orlando.

@@ -23,27 +23,34 @@ Open the app and you'll land on **/setup**, which creates the first **super admi
 | See and track bookings | Every organization | Own org | Own org |
 | Invite people, change roles, disable accounts | Every organization | Own org | — |
 | Create organizations, change email domains | ✅ | — | — |
+| Verify/remove companies on a booking | Carrier orgs only (on their own bookings) | | |
 | Invite super admins | ✅ | — | — |
 
 - Invites only go to emails on the organization's domains. Super admins can override this, e.g. for a consultant.
 - Invite links work once and expire after 7 days. Efficio doesn't send email yet, so you copy the link and send it yourself.
 - Sessions last 14 days. Disabling an account signs that person out immediately.
 
+### Shared bookings (P-001)
+- A booking is identified by **carrier + booking number** and is shared by every company that follows it.
+- Exporters pick the carrier when adding a booking; they're attached as **claimed**.
+- An **ocean carrier** organization (created with its carrier code) automatically sees every booking under that code, and can **verify** or **remove** the companies on it.
+- Companies never see each other on a booking, and only see its history from when they joined. Only the carrier sees the full list.
+
 ### Simulated data
 By default the app uses **simulated Port Houston data** (`PORT_ADAPTER=mock`). Try these booking numbers:
 
-| Booking | Scenario |
-|---|---|
-| `HOU1001` | Receiving not open yet |
-| `HOU1002` | Receiving open |
-| `HOU1003` | Closing soon (under 48h) |
-| `HOU1004` | Receiving closed |
-| `HOU1005` | Cutoff moves 12h earlier on every refresh (shows change detection) |
-| anything else | Not yet at terminal |
+| Booking | Carrier | Scenario |
+|---|---|---|
+| `HOU1001` | MSC | Receiving not open yet |
+| `HOU1002` | Maersk | Receiving open |
+| `HOU1003` | Hapag-Lloyd | Closing soon (under 48h) |
+| `HOU1004` | CMA CGM | Receiving closed |
+| `HOU1005` | ONE | Cutoff moves 12h earlier on every refresh (shows change detection) |
+| anything else, or the wrong carrier | | Not yet at terminal |
 
 Other commands: `npm test` (unit tests), `npm run typecheck`, `npm run build && npm start`.
 
-> **Upgrading from the pre-login version?** Delete `web/.data/efficio.db`. It only held simulated data.
+> **Upgrading?** From the logins version, the database upgrades itself on startup: accounts are kept and simulated bookings are reset. From the pre-login version, delete `web/.data/efficio.db`.
 
 ## Configuration
 Copy `../.env.example` to `web/.env.local` and fill it in. Never commit it.

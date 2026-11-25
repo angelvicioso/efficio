@@ -1,4 +1,4 @@
-import type { PortAdapter } from "./adapter";
+import type { BookingRef, PortAdapter } from "./adapter";
 import type { PortBookingSnapshot, Terminal } from "@/lib/domain/types";
 
 const HOUR = 60 * 60 * 1000;
@@ -29,7 +29,10 @@ export const MOCK_SCENARIOS: Record<string, Scenario> = {
   HOU1005: { description: "Cutoff moves earlier on each refresh", terminal: "BAYPORT", carrierCode: "ONEY", vesselName: "ONE GULF", voyage: "012W", opensIn: -2 * DAY, cargoCutoffIn: 5 * DAY, etdIn: 7 * DAY },
 };
 
-/** Any booking number not listed above is "not on file", like a booking the carrier hasn't sent yet. */
+/**
+ * Any booking number not listed above, or listed under a different carrier, is "not on file",
+ * like a booking the carrier hasn't sent yet or one entered with the wrong carrier.
+ */
 export class MockPortHoustonAdapter implements PortAdapter {
   readonly source = "mock";
   readonly displayName = "Port Houston (simulated)";
@@ -39,10 +42,12 @@ export class MockPortHoustonAdapter implements PortAdapter {
 
   constructor(private readonly now: () => Date = () => new Date()) {}
 
-  async lookupBooking(bookingNumber: string): Promise<PortBookingSnapshot> {
-    const key = bookingNumber.trim().toUpperCase();
+  async lookupBooking(ref: BookingRef): Promise<PortBookingSnapshot> {
+    const key = ref.bookingNumber.trim().toUpperCase();
+    const carrierCode = ref.carrierCode.trim().toUpperCase();
     const fetchedAt = this.now();
-    const scenario = MOCK_SCENARIOS[key];
+    const listed = MOCK_SCENARIOS[key];
+    const scenario = listed && listed.carrierCode === carrierCode ? listed : undefined;
     const count = (this.lookups.get(key) ?? 0) + 1;
     this.lookups.set(key, count);
 
@@ -52,11 +57,11 @@ export class MockPortHoustonAdapter implements PortAdapter {
         bookingNumber: key,
         onFile: false,
         terminal: null,
-        carrierCode: null,
+        carrierCode,
         vesselVisit: null,
         receivingOpensAt: null,
         cutoffs: [],
-        raw: { mock: true, bookingNumber: key, found: false },
+        raw: { mock: true, bookingNumber: key, line: carrierCode, found: false },
         fetchedAt: fetchedAt.toISOString(),
       };
     }

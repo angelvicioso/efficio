@@ -1,4 +1,4 @@
-import { AdapterNotReadyError, type PortAdapter } from "../adapter";
+import { AdapterNotReadyError, type BookingRef, type PortAdapter } from "../adapter";
 import type { PortBookingSnapshot } from "@/lib/domain/types";
 import { EvpClient } from "./evpClient";
 
@@ -16,8 +16,8 @@ export class NavisPortHoustonAdapter implements PortAdapter {
 
   constructor(private readonly client: EvpClient = EvpClient.fromEnv()) {}
 
-  async lookupBooking(bookingNumber: string): Promise<PortBookingSnapshot> {
-    void bookingNumber;
+  async lookupBooking(ref: BookingRef): Promise<PortBookingSnapshot> {
+    void ref;
     void this.client;
     throw new AdapterNotReadyError(
       "Live Port Houston lookups need the N4 booking and vessel visit endpoints (spike S-013). Use PORT_ADAPTER=mock for now.",

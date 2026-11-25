@@ -7,7 +7,10 @@ import { diffSnapshots } from "@/lib/domain/changes";
 import { CUTOFF_LABELS, TERMINAL_LABELS } from "@/lib/domain/types";
 import { formatAgo, formatHouston } from "@/lib/format";
 import { StatusBadge } from "../../../../StatusBadge";
-import { refreshBookingAction, removeBookingAction } from "../../actions";
+import { refreshBookingAction, removeBookingAction, removePartyAction, verifyPartyAction } from "../../actions";
+import { AccessBadge } from "../../../../AccessBadge";
+import { PARTY_ROLE_LABELS } from "@/lib/bookings";
+import { carrierName } from "@/lib/domain/carriers";
 
 export const dynamic = "force-dynamic";
 
@@ -15,13 +18,15 @@ export default async function BookingPage({ params }: { params: Promise<{ org: s
   const { org: slug, id } = await params;
   const { org } = await requireOrgAccess(slug);
   const service = bookingService();
-  const booking = service.get(org.id, Number(id));
+  const booking = service.get(org, Number(id));
   if (!booking) notFound();
 
   const latest = booking.latest;
   const snap = latest?.data ?? null;
   const changes = snap && booking.previous?.data ? diffSnapshots(booking.previous.data, snap) : [];
-  const history = service.history(booking.id, 10);
+  const history = service.history(org, booking.id, 10);
+  const parties = service.parties(org, booking.id);
+  const isCarrier = booking.access.via === "carrier";
   const status = snap ? receivingStatus(snap) : null;
 
   return (
@@ -32,8 +37,11 @@ export default async function BookingPage({ params }: { params: Promise<{ org: s
 
       <section className="hero">
         <div>
-          <div className="muted small">Booking</div>
+          <div className="muted small">{carrierName(booking.carrierCode)} booking</div>
           <h1 className="booking-number">{booking.bookingNumber}</h1>
+          <div className="access-line">
+            <AccessBadge access={booking.access} />
+          </div>
           {latest && (
             <div className="muted small">
               Updated {formatAgo(latest.fetchedAt)} ({formatHouston(latest.fetchedAt)})
@@ -125,7 +133,7 @@ export default async function BookingPage({ params }: { params: Promise<{ org: s
               <dt>Vessel ETD</dt>
               <dd>{formatHouston(snap.vesselVisit?.etd)}</dd>
               <dt>Carrier</dt>
-              <dd>{snap.carrierCode ?? "—"}</dd>
+              <dd>{carrierName(booking.carrierCode)}</dd>
             </dl>
           </section>
         </div>
@@ -139,6 +147,61 @@ export default async function BookingPage({ params }: { params: Promise<{ org: s
       )}
 
       <section className="card">
+        <h2>{isCarrier ? "Companies on this booking" : "Your access"}</h2>
+        {isCarrier ? (
+          parties.length === 0 ? (
+            <p className="muted">No customers are tracking this booking in Efficio yet.</p>
+          ) : (
+            <>
+              <p className="muted small">
+                These companies added this booking themselves. Verify the ones that really are on it, and remove any that
+                aren’t. Only you can see this list.
+              </p>
+              <ul className="plain-list">
+                {parties.map((p) => (
+                  <li key={p.orgId} className="party-row">
+                    <span>
+                      <strong>{p.orgName}</strong> <span className="muted small">· {PARTY_ROLE_LABELS[p.role]}</span>{" "}
+                      <span className={`pill ${p.status === "verified" ? "pill-verified" : "pill-claimed"}`}>
+                        {p.status === "verified" ? "Verified" : "Claimed"}
+                      </span>
+                    </span>
+                    <span className="party-actions">
+                      {p.status === "claimed" && (
+                        <form action={verifyPartyAction}>
+                          <input type="hidden" name="org" value={org.slug} />
+                          <input type="hidden" name="id" value={booking.id} />
+                          <input type="hidden" name="partyOrgId" value={p.orgId} />
+                          <button type="submit" className="secondary small-button">
+                            Verify
+                          </button>
+                        </form>
+                      )}
+                      <form action={removePartyAction}>
+                        <input type="hidden" name="org" value={org.slug} />
+                        <input type="hidden" name="id" value={booking.id} />
+                        <input type="hidden" name="partyOrgId" value={p.orgId} />
+                        <button type="submit" className="link-button">
+                          Remove
+                        </button>
+                      </form>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )
+        ) : booking.access.status === "claimed" ? (
+          <p className="muted">
+            You added this booking. Until {carrierName(booking.carrierCode)} confirms you’re on it, you see the
+            terminal’s data only. Shared details from the carrier and other parties will appear once it’s verified.
+          </p>
+        ) : (
+          <p className="muted">{carrierName(booking.carrierCode)} confirmed you’re on this booking.</p>
+        )}
+      </section>
+
+      <section className="card">
         <h2>Update history</h2>
         <ol className="history">
           {history.map((h) => (
@@ -150,6 +213,7 @@ export default async function BookingPage({ params }: { params: Promise<{ org: s
         </ol>
       </section>
 
+      {!isCarrier && (
       <form action={removeBookingAction} className="remove">
         <input type="hidden" name="org" value={org.slug} />
         <input type="hidden" name="id" value={booking.id} />
@@ -157,6 +221,7 @@ export default async function BookingPage({ params }: { params: Promise<{ org: s
           Stop tracking this booking
         </button>
       </form>
+      )}
     </>
   );
 }

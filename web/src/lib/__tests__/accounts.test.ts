@@ -161,3 +161,14 @@ describe("permissions", () => {
     expect(canManageOrgSettings(bob)).toBe(false);
   });
 });
+
+describe("carrier organizations", () => {
+  it("require one known, unused carrier code", async () => {
+    const { a } = await setup();
+    expect(() => a.createOrganization({ name: "Maersk", type: "ocean_carrier" })).toThrow(/Choose which carrier/);
+    expect(() => a.createOrganization({ name: "Nope Lines", type: "ocean_carrier", carrierCode: "NOPE" })).toThrow(/Unknown carrier/);
+    expect(a.createOrganization({ name: "Maersk", type: "ocean_carrier", carrierCode: "maeu" }).carrierCode).toBe("MAEU");
+    expect(() => a.createOrganization({ name: "Maersk 2", type: "ocean_carrier", carrierCode: "MAEU" })).toThrow(/already carrier/);
+    expect(() => a.createOrganization({ name: "Yolo Exports", type: "exporter", carrierCode: "MSCU" })).toThrow(/Only ocean carrier/);
+  });
+});

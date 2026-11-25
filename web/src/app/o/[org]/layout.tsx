@@ -22,7 +22,10 @@ export default async function OrgLayout({
       )}
       <div className="org-header">
         <div>
-          <div className="muted small">{ORG_TYPES[org.type]}</div>
+          <div className="muted small">
+            {ORG_TYPES[org.type]}
+            {org.carrierCode && ` · ${org.carrierCode}`}
+          </div>
           <div className="org-name">{org.name}</div>
         </div>
         <nav className="org-nav" aria-label="Organization">

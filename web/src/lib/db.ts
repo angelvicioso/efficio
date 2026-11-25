@@ -6,7 +6,55 @@ import path from "node:path";
  * SQLite via Node's built-in driver: no native build step, one file on disk.
  * Fine for a single-server POC; swap for Postgres when we have real users.
  */
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
+
+/**
+ * Shared bookings (P-001, D-015): one record per real booking (carrier + number).
+ * Organizations reach a booking through booking_parties; carrier organizations
+ * also see every booking with their carrier code.
+ */
+const BOOKING_TABLES = `
+  CREATE TABLE bookings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    carrier_code TEXT NOT NULL,
+    booking_number TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    UNIQUE (carrier_code, booking_number)
+  );
+  CREATE TABLE booking_parties (
+    booking_id INTEGER NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+    org_id INTEGER NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    role TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('claimed', 'verified')),
+    added_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (booking_id, org_id)
+  );
+  CREATE INDEX booking_parties_org ON booking_parties(org_id);
+  CREATE TABLE snapshots (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    booking_id INTEGER NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+    fetched_at TEXT NOT NULL,
+    source TEXT NOT NULL,
+    data TEXT,
+    error TEXT
+  );
+  CREATE INDEX snapshots_booking ON snapshots(booking_id, id);
+`;
+
+/**
+ * Upgrades from older versions. v2 -> v3 keeps organizations, users, sessions and invites,
+ * and resets bookings: before v3 they had no carrier and only ever held simulated data.
+ */
+const MIGRATIONS: Record<number, string> = {
+  3: `
+    ALTER TABLE organizations ADD COLUMN carrier_code TEXT;
+    CREATE UNIQUE INDEX organizations_carrier ON organizations(carrier_code) WHERE carrier_code IS NOT NULL;
+    DROP TABLE snapshots;
+    DROP TABLE bookings;
+    ${BOOKING_TABLES}
+  `,
+};
 
 const SCHEMA = `
   CREATE TABLE organizations (
@@ -14,8 +62,10 @@ const SCHEMA = `
     name TEXT NOT NULL,
     slug TEXT NOT NULL UNIQUE,
     type TEXT NOT NULL,
+    carrier_code TEXT,
     created_at TEXT NOT NULL
   );
+  CREATE UNIQUE INDEX organizations_carrier ON organizations(carrier_code) WHERE carrier_code IS NOT NULL;
   CREATE TABLE organization_domains (
     domain TEXT PRIMARY KEY,
     org_id INTEGER NOT NULL REFERENCES organizations(id) ON DELETE CASCADE
@@ -49,23 +99,7 @@ const SCHEMA = `
     used_at TEXT,
     created_at TEXT NOT NULL
   );
-  CREATE TABLE bookings (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    org_id INTEGER NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
-    booking_number TEXT NOT NULL,
-    created_at TEXT NOT NULL,
-    UNIQUE (org_id, booking_number)
-  );
-  CREATE TABLE snapshots (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    booking_id INTEGER NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
-    fetched_at TEXT NOT NULL,
-    source TEXT NOT NULL,
-    data TEXT,
-    error TEXT
-  );
-  CREATE INDEX snapshots_booking ON snapshots(booking_id, id);
-  CREATE INDEX users_org ON users(org_id);
+${BOOKING_TABLES}  CREATE INDEX users_org ON users(org_id);
   CREATE INDEX sessions_user ON sessions(user_id);
 `;
 
@@ -84,8 +118,14 @@ export function openDb(file: string): DatabaseSync {
       throw new Error(`Database ${file} is from before logins were added. Delete it and restart.`);
     }
     conn.exec(`BEGIN; ${SCHEMA} PRAGMA user_version = ${SCHEMA_VERSION}; COMMIT;`);
-  } else if (version !== SCHEMA_VERSION) {
-    throw new Error(`Database ${file} has schema version ${version}; this app expects ${SCHEMA_VERSION}.`);
+  } else if (version < SCHEMA_VERSION) {
+    for (let v = version + 1; v <= SCHEMA_VERSION; v++) {
+      conn.exec("PRAGMA foreign_keys = OFF;");
+      conn.exec(`BEGIN; ${MIGRATIONS[v]} PRAGMA user_version = ${v}; COMMIT;`);
+      conn.exec("PRAGMA foreign_keys = ON;");
+    }
+  } else if (version > SCHEMA_VERSION) {
+    throw new Error(`Database ${file} has schema version ${version}, newer than this app (${SCHEMA_VERSION}).`);
   }
   return conn;
 }

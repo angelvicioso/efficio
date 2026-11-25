@@ -166,3 +166,22 @@ h3 { font-size: 0.95rem; margin: 1.25rem 0 0.5rem; }
 .org-nav { display: flex; gap: 1rem; }
 .org-nav a { font-weight: 600; text-decoration: none; }
 .org-nav a:hover { text-decoration: underline; }
+
+/* ---------- Shared bookings ---------- */
+.add-fields { display: flex; gap: 0.5rem; grid-column: 1; min-width: 0; }
+.add-fields select { flex: 0 0 auto; max-width: 45%; }
+.add-form > button { grid-column: 2; grid-row: 2; }
+.fixed-carrier { display: flex; align-items: center; padding: 0 0.75rem; border-radius: 8px; background: var(--grey-bg); color: var(--grey-fg); font-weight: 600; white-space: nowrap; }
+.pill { display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 0.1rem 0.5rem; border-radius: 999px; margin-top: 0.25rem; white-space: nowrap; }
+.pill-claimed { background: var(--grey-bg); color: var(--grey-fg); }
+.pill-verified { background: var(--blue-bg); color: var(--blue-fg); }
+.access-line { margin-top: 0.25rem; }
+.party-row { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.party-actions { display: flex; align-items: center; gap: 0.75rem; }
+.small-button { padding: 0.3rem 0.7rem; font-size: 0.85rem; }
+@media (max-width: 560px) {
+  .add-form { grid-template-columns: 1fr; }
+  .add-form > button { grid-column: 1; grid-row: auto; justify-self: start; }
+  .add-fields { flex-direction: column; }
+  .add-fields select { max-width: none; }
+}

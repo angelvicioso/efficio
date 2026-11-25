@@ -1,4 +1,5 @@
 import type { DatabaseSync } from "node:sqlite";
+import { isKnownCarrier } from "@/lib/domain/carriers";
 import { hashPassword, hashToken, newToken, verifyPassword } from "./crypto";
 
 /** The kinds of companies on the platform. Only exporters use the app in the POC (D-001). */
@@ -8,6 +9,7 @@ export const ORG_TYPES = {
   trucking: "Trucking carrier",
   port: "Port / terminal",
   warehouse: "Warehouse",
+  forwarder: "Freight forwarder / NVOCC",
 } as const;
 export type OrgType = keyof typeof ORG_TYPES;
 
@@ -18,6 +20,8 @@ export interface Organization {
   name: string;
   slug: string;
   type: OrgType;
+  /** Ocean carrier organizations only: their SCAC code. They see every booking with this code (P-001). */
+  carrierCode: string | null;
   domains: string[];
   createdAt: string;
 }
@@ -158,10 +162,11 @@ export class AccountService {
 
   // ---------- Organizations ----------
 
-  createOrganization(input: { name: string; type: OrgType; domains?: string[] }): Organization {
+  createOrganization(input: { name: string; type: OrgType; domains?: string[]; carrierCode?: string | null }): Organization {
     const name = input.name.trim();
     if (name.length < 2) throw new AccountError("Organization name is too short.");
     if (!(input.type in ORG_TYPES)) throw new AccountError("Unknown organization type.");
+    const carrierCode = this.checkCarrierCode(input.type, input.carrierCode ?? null, null);
     const base = slugify(name) || "org";
     let slug = base;
     for (let i = 2; this.db.prepare("SELECT 1 FROM organizations WHERE slug = ?").get(slug); i++) slug = `${base}-${i}`;
@@ -170,8 +175,8 @@ export class AccountService {
     this.db.exec("BEGIN");
     try {
       const result = this.db
-        .prepare("INSERT INTO organizations (name, slug, type, created_at) VALUES (?, ?, ?, ?)")
-        .run(name, slug, input.type, this.iso());
+        .prepare("INSERT INTO organizations (name, slug, type, carrier_code, created_at) VALUES (?, ?, ?, ?, ?)")
+        .run(name, slug, input.type, carrierCode, this.iso());
       const id = Number(result.lastInsertRowid);
       for (const d of input.domains ?? []) if (d.trim()) this.addDomain(id, d);
       this.db.exec("COMMIT");
@@ -180,6 +185,20 @@ export class AccountService {
       this.db.exec("ROLLBACK");
       throw e;
     }
+  }
+
+  /** Carrier orgs must be linked to exactly one known carrier code that no other org has. */
+  private checkCarrierCode(type: OrgType, input: string | null, orgId: number | null): string | null {
+    const code = input?.trim().toUpperCase() || null;
+    if (type !== "ocean_carrier") {
+      if (code) throw new AccountError("Only ocean carrier organizations have a carrier code.");
+      return null;
+    }
+    if (!code) throw new AccountError("Choose which carrier this organization is.");
+    if (!isKnownCarrier(code)) throw new AccountError(`Unknown carrier code ${code}.`);
+    const owner = this.db.prepare("SELECT id FROM organizations WHERE carrier_code = ?").get(code) as { id: number } | undefined;
+    if (owner && owner.id !== orgId) throw new AccountError(`Another organization is already carrier ${code}.`);
+    return code;
   }
 
   addDomain(orgId: number, input: string): void {
@@ -214,7 +233,9 @@ export class AccountService {
       .prepare(
         `SELECT o.*,
           (SELECT COUNT(*) FROM users u WHERE u.org_id = o.id) AS user_count,
-          (SELECT COUNT(*) FROM bookings b WHERE b.org_id = o.id) AS booking_count
+          (SELECT COUNT(*) FROM bookings b
+            WHERE b.carrier_code = o.carrier_code
+               OR EXISTS (SELECT 1 FROM booking_parties p WHERE p.booking_id = b.id AND p.org_id = o.id)) AS booking_count
          FROM organizations o ORDER BY o.name COLLATE NOCASE`,
       )
       .all() as unknown as (OrgRow & { user_count: number; booking_count: number })[];
@@ -227,7 +248,7 @@ export class AccountService {
         domain: string;
       }[]
     ).map((d) => d.domain);
-    return { id: r.id, name: r.name, slug: r.slug, type: r.type, domains, createdAt: r.created_at };
+    return { id: r.id, name: r.name, slug: r.slug, type: r.type, carrierCode: r.carrier_code, domains, createdAt: r.created_at };
   }
 
   // ---------- Users ----------
@@ -425,6 +446,7 @@ interface OrgRow {
   name: string;
   slug: string;
   type: OrgType;
+  carrier_code: string | null;
   created_at: string;
 }
 

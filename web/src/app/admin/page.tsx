@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ORG_TYPES } from "@/lib/auth/accounts";
+import { CARRIERS, carrierName } from "@/lib/domain/carriers";
 import { requireSuperAdmin } from "@/lib/auth/session";
 import { formatHouston } from "@/lib/format";
 import { accountService } from "@/lib/service";
@@ -49,7 +50,10 @@ export default async function AdminPage() {
                       {o.name}
                     </Link>
                   </td>
-                  <td>{ORG_TYPES[o.type]}</td>
+                  <td>
+                    {ORG_TYPES[o.type]}
+                    {o.carrierCode && <div className="muted small">{carrierName(o.carrierCode)} ({o.carrierCode})</div>}
+                  </td>
                   <td>{o.domains.length ? o.domains.join(", ") : <span className="muted">None</span>}</td>
                   <td>
                     <Link href={`/o/${o.slug}/team`}>{o.userCount}</Link>
@@ -79,6 +83,20 @@ export default async function AdminPage() {
               ))}
             </select>
           </label>
+          <label>
+            Carrier <span className="muted small">(ocean carriers only)</span>
+            <select name="carrierCode" defaultValue="">
+              <option value="">Not a carrier</option>
+              {Object.entries(CARRIERS).map(([code, name]) => (
+                <option key={code} value={code}>
+                  {name} ({code})
+                </option>
+              ))}
+            </select>
+          </label>
+          <p className="muted small">
+            A carrier organization automatically sees every booking under its carrier code and can verify the customers on them.
+          </p>
           <label>
             Email domains <span className="muted small">(comma-separated, e.g. gulfcoastexports.com)</span>
             <input name="domains" placeholder="company.com" />

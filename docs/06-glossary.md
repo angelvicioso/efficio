@@ -28,3 +28,5 @@
 | **Org admin / member** | A customer's users. Admins manage their team; members track bookings. |
 | **Party** | An organization involved in a booking, in a role: exporter, carrier, trucker, terminal, warehouse or forwarder (P-001). |
 | **Freight forwarder / NVOCC** | A company that books space with ocean carriers on behalf of exporters, sometimes under its own (house) booking number. |
+| **SCAC** | Standard Carrier Alpha Code: a 4-letter carrier code, e.g. MAEU (Maersk), MSCU (MSC). Efficio identifies carriers by SCAC. |
+| **Claimed / verified** | A company that added a booking itself is *claimed*; once the carrier confirms it's really on the booking, it's *verified* (P-001). |

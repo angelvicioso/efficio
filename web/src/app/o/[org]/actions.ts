@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { AccountError, type OrgRole } from "@/lib/auth/accounts";
 import { canManageOrgSettings } from "@/lib/auth/permissions";
 import { baseUrl, requireOrgAccess, requireTeamManager } from "@/lib/auth/session";
+import { BookingError } from "@/lib/bookings";
 import { accountService, bookingService } from "@/lib/service";
 import type { FormState } from "../../ActionForm";
 
@@ -17,7 +18,7 @@ function slugOf(formData: FormData): string {
 }
 
 function fail(e: unknown): FormState {
-  if (e instanceof AccountError || (e instanceof Error && e.message.startsWith("Booking numbers"))) return { error: e.message };
+  if (e instanceof AccountError || e instanceof BookingError) return { error: e.message };
   console.error(e);
   return { error: "Something went wrong. Please try again." };
 }
@@ -25,10 +26,18 @@ function fail(e: unknown): FormState {
 // ---------- Bookings ----------
 
 export async function addBookingAction(_prev: FormState, formData: FormData): Promise<FormState> {
-  const { org } = await requireOrgAccess(slugOf(formData));
+  const { user, org } = await requireOrgAccess(slugOf(formData));
   let id: number;
   try {
-    ({ id } = await bookingService().add(org.id, String(formData.get("bookingNumber") ?? "")));
+    ({ id } = await bookingService().add(
+      org,
+      {
+        // Carrier organizations can only add their own bookings.
+        carrierCode: org.carrierCode ?? String(formData.get("carrierCode") ?? ""),
+        bookingNumber: String(formData.get("bookingNumber") ?? ""),
+      },
+      user.id,
+    ));
   } catch (e) {
     return fail(e);
   }
@@ -39,22 +48,45 @@ export async function addBookingAction(_prev: FormState, formData: FormData): Pr
 export async function refreshBookingAction(formData: FormData): Promise<void> {
   const { org } = await requireOrgAccess(slugOf(formData));
   const id = Number(formData.get("id"));
-  if (!bookingService().get(org.id, id)) return;
-  await bookingService().refresh(org.id, id);
+  if (!bookingService().access(org, id)) return;
+  await bookingService().refresh(org, id);
   revalidatePath(`/o/${org.slug}`, "layout");
 }
 
 export async function refreshAllAction(formData: FormData): Promise<void> {
   const { org } = await requireOrgAccess(slugOf(formData));
-  await bookingService().refreshAll(org.id);
+  await bookingService().refreshAll(org);
   revalidatePath(`/o/${org.slug}`);
 }
 
 export async function removeBookingAction(formData: FormData): Promise<void> {
   const { org } = await requireOrgAccess(slugOf(formData));
-  bookingService().remove(org.id, Number(formData.get("id")));
+  bookingService().remove(org, Number(formData.get("id")));
   revalidatePath(`/o/${org.slug}`);
   redirect(`/o/${org.slug}`);
+}
+
+/** Carrier only: confirm or remove a company that claimed one of its bookings. */
+export async function verifyPartyAction(formData: FormData): Promise<void> {
+  const { org } = await requireOrgAccess(slugOf(formData));
+  const id = Number(formData.get("id"));
+  try {
+    bookingService().verifyParty(org, id, Number(formData.get("partyOrgId")));
+  } catch (e) {
+    if (!(e instanceof BookingError)) throw e;
+  }
+  revalidatePath(`/o/${org.slug}/bookings/${id}`);
+}
+
+export async function removePartyAction(formData: FormData): Promise<void> {
+  const { org } = await requireOrgAccess(slugOf(formData));
+  const id = Number(formData.get("id"));
+  try {
+    bookingService().removeParty(org, id, Number(formData.get("partyOrgId")));
+  } catch (e) {
+    if (!(e instanceof BookingError)) throw e;
+  }
+  revalidatePath(`/o/${org.slug}/bookings/${id}`);
 }
 
 // ---------- Team ----------

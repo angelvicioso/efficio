@@ -8,6 +8,8 @@ import { formatAgo, formatHouston } from "@/lib/format";
 import { MOCK_SCENARIOS } from "@/lib/ports/mock";
 import { getPortAdapter } from "@/lib/ports";
 import { StatusBadge } from "../../StatusBadge";
+import { AccessBadge } from "../../AccessBadge";
+import { carrierName } from "@/lib/domain/carriers";
 import { AddBookingForm } from "./AddBookingForm";
 import { refreshAllAction } from "./actions";
 
@@ -16,17 +18,23 @@ export const dynamic = "force-dynamic";
 export default async function OrgBookingsPage({ params }: { params: Promise<{ org: string }> }) {
   const { org: slug } = await params;
   const { org } = await requireOrgAccess(slug);
-  const bookings = bookingService().list(org.id);
+  const bookings = bookingService().list(org);
+  const isCarrier = org.type === "ocean_carrier";
   const isMock = getPortAdapter().source === "mock";
 
   return (
     <>
       <section className="intro">
-        <h1>Bookings at Port Houston</h1>
-        <p className="muted">Receiving windows and cutoffs as the terminal reports them. Times are Houston time.</p>
+        <h1>{isCarrier ? `${carrierName(org.carrierCode)} bookings at Port Houston` : "Bookings at Port Houston"}</h1>
+        <p className="muted">
+          {isCarrier
+            ? "Every booking under your carrier code that a customer is tracking, plus any you add. "
+            : "Receiving windows and cutoffs as the terminal reports them. "}
+          Times are Houston time.
+        </p>
       </section>
 
-      <AddBookingForm org={org.slug} />
+      <AddBookingForm org={org.slug} fixedCarrier={isCarrier ? org.carrierCode : null} />
 
       {isMock && (
         <p className="hint">
@@ -34,10 +42,10 @@ export default async function OrgBookingsPage({ params }: { params: Promise<{ or
           {Object.entries(MOCK_SCENARIOS).map(([num, s], i) => (
             <span key={num}>
               {i > 0 && ", "}
-              <code>{num}</code> ({s.description.toLowerCase()})
+              <code>{num}</code> with {carrierName(s.carrierCode)} ({s.description.toLowerCase()})
             </span>
           ))}
-          . Any other number shows as not yet at the terminal.
+          . Any other number, or the wrong carrier, shows as not yet at the terminal.
         </p>
       )}
 
@@ -59,10 +67,10 @@ export default async function OrgBookingsPage({ params }: { params: Promise<{ or
               <thead>
                 <tr>
                   <th>Booking</th>
+                  <th>Carrier</th>
                   <th>Status</th>
                   <th>Receiving opens</th>
                   <th>Cargo cutoff</th>
-                  <th>Vessel</th>
                   <th>Updated</th>
                 </tr>
               </thead>
@@ -79,6 +87,12 @@ export default async function OrgBookingsPage({ params }: { params: Promise<{ or
                         {snap?.terminal && <div className="muted small">{TERMINAL_LABELS[snap.terminal]}</div>}
                       </td>
                       <td>
+                        {carrierName(b.carrierCode)}
+                        <div>
+                          <AccessBadge access={b.access} />
+                        </div>
+                      </td>
+                      <td>
                         {snap ? (
                           <StatusBadge status={receivingStatus(snap)} />
                         ) : (
@@ -92,7 +106,6 @@ export default async function OrgBookingsPage({ params }: { params: Promise<{ or
                       </td>
                       <td>{formatHouston(snap?.receivingOpensAt)}</td>
                       <td>{formatHouston(snap ? cargoCutoff(snap) : null)}</td>
-                      <td>{snap?.vesselVisit?.vesselName ?? "—"}</td>
                       <td className="muted">{b.latest ? formatAgo(b.latest.fetchedAt) : "—"}</td>
                     </tr>
                   );

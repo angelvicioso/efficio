@@ -23,6 +23,7 @@ export async function createOrganizationAction(_prev: FormState, formData: FormD
       name: String(formData.get("name") ?? ""),
       type,
       domains: String(formData.get("domains") ?? "").split(/[,\s]+/).filter(Boolean),
+      carrierCode: type === "ocean_carrier" ? String(formData.get("carrierCode") ?? "") : null,
     });
     slug = org.slug;
   } catch (e) {

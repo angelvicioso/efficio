@@ -15,7 +15,7 @@ Stories are **Draft** until their blocking questions are answered and acceptance
 ### E-01 · Exporter booking tracking
 | ID | Story | Blocked by | Status |
 |---|---|---|---|
-| S-001 | As an **exporter**, I want to **add a booking by booking number** (Port Houston), so that the platform starts tracking it. | Q-017 | **Built (mock)**, carrier field pending Q-017 |
+| S-001 | As an **exporter**, I want to **add a booking by carrier + booking number** (Port Houston), so that the platform starts tracking it. | — | **Built (mock)** with a required carrier dropdown (D-015) |
 | S-002 | As an **exporter**, I want to **see my booking's receiving window (ERD to cargo cutoff) and cutoffs** as Port Houston reports them, plus whether the booking is on file at the terminal, so that I know when I can deliver and the deadline. | Q-018, R-006 | **Built (mock)** |
 | S-003 | As an **exporter**, I want a **countdown view of the receiving window** (not open yet, open with X days left, closing soon, closed), so I can act before the cutoff. A fuller timeline (gated in → loaded → departed) comes later. | Q-018 | **Built (mock)**, 48h threshold pending Q-022 |
 | S-004 | As an **exporter**, I want a **list of all my tracked bookings** with key dates and status, so I can spot problems across shipments. | Q-007 | **Built (mock)** |
@@ -24,6 +24,16 @@ Stories are **Draft** until their blocking questions are answered and acceptance
 | S-007 | As an **org admin**, I want to **invite teammates, change roles and disable accounts**, so my company manages its own access. | — | **Done** (invite links are copied by hand until S-008) |
 | S-008 | As a **user**, I want **invites and password resets by email**, so nobody has to pass links around by hand. | Q-025 | Draft |
 | S-009 | As a **super admin**, I want an **activity log** of who did what (in particular super admins acting inside a customer's workspace), so we can answer customer questions and audits. | — | Draft |
+
+### E-04 · Multi-party collaboration (P-001)
+| ID | Story | Blocked by | Status |
+|---|---|---|---|
+| S-030 | As the **platform**, I want **one shared record per booking** that each involved company sees in its own workspace, so everyone works from the same data. | — | **Done** |
+| S-031 | As a **carrier**, I want to **see every booking under my carrier code** that customers track, so I know who follows my bookings. | — | **Done** |
+| S-032 | As a **carrier**, I want to **verify or remove the companies that claimed my bookings**, so only real parties get shared data. | — | **Done** |
+| S-033 | As an **exporter**, I want to **add my trucker or warehouse to a booking**, so they see what they need without asking me. | Q-028 | Draft |
+| S-034 | As any **party**, I want to see **only the fields my role needs** (visibility matrix in P-001). | Q-028 | Draft |
+| S-035 | As any **company**, I want **private notes and my own references** (PO, internal job number) on a booking that only my company sees. | — | Draft |
 
 ### E-02 · Port/terminal data integration
 | ID | Story | Blocked by | Status |
