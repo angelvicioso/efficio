@@ -52,6 +52,25 @@ Other commands: `npm test` (unit tests), `npm run typecheck`, `npm run build && 
 
 > **Upgrading?** From the logins version, the database upgrades itself on startup: accounts are kept and simulated bookings are reset. From the pre-login version, delete `web/.data/efficio.db`.
 
+## Share a quick demo link
+Give someone a temporary link to the app running on **your** computer, with nothing to install on their side.
+
+1. Install Cloudflare's free tunnel tool once: `brew install cloudflared` (Mac) or `winget install --id Cloudflare.cloudflared` (Windows).
+2. Start the tunnel: `cloudflared tunnel --url http://localhost:3000`. It prints a link like `https://some-words.trycloudflare.com`.
+3. In a second terminal, start the app with that link:
+   ```bash
+   cd web
+   npm run build
+   EFFICIO_BASE_URL=https://some-words.trycloudflare.com npm start
+   ```
+   (Windows PowerShell: `$env:EFFICIO_BASE_URL="https://…"; npm start`)
+4. Send them the link. They sign in with an account you created for them: create an invite on the Team page. Invite links will use the tunnel address.
+
+Good to know:
+- The link works **only while your computer is on and both commands are running**, and it changes each time you restart the tunnel.
+- **Anyone with the link can reach the sign-in page.** Accounts are invite-only, but there's no limit on login attempts yet (R-014), so share it only with people you trust and stop the tunnel (Ctrl+C) when you're done.
+- Use `npm start` (as above), not `npm run dev`, when sharing: dev mode shows detailed error pages.
+
 ## Configuration
 Copy `../.env.example` to `web/.env.local` and fill it in. Never commit it.
 
@@ -62,7 +81,7 @@ Copy `../.env.example` to `web/.env.local` and fill it in. Never commit it.
 | `EFFICIO_DB_PATH` | SQLite file location (default `web/.data/efficio.db`) |
 | `REFRESH_INTERVAL_MINUTES` | How often the server re-checks every followed booking (default `5`; `0` turns it off). Vessels that sailed over a day ago are skipped (D-017) |
 | `REFRESH_TOKEN` | Secret for `POST /api/refresh-all`, to trigger a refresh from outside (only needed on hosting without a long-running server) |
-| `EFFICIO_BASE_URL` | Public URL used in invite links (default: taken from the request) |
+| `EFFICIO_BASE_URL` | Public address of the app (e.g. a tunnel or hosted domain). Used in invite links, and trusted for form submissions when the app sits behind a tunnel or proxy |
 | `EFFICIO_INSECURE_COOKIES` | Set to `1` only to test a production build over plain http (not on localhost) |
 
 ## How the code is organized
