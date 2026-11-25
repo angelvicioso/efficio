@@ -1,6 +1,6 @@
 # Efficio — Logistics Collaboration Platform (POC)
 
-_Repo name: `vicious`. Product name: **Efficio**._
+_Repository: `angelvicioso/efficio` (renamed from `vicious`)._
 
 A platform that brings together the entities involved in moving export cargo — **exporters, ocean carriers, trucking carriers, ports/terminals, and warehouses** — around a shared view of each booking.
 
@@ -8,7 +8,7 @@ A platform that brings together the entities involved in moving export cargo —
 **First capability:** an exporter enters a booking and sees, in near-real time, what the port/terminal is reporting about it.
 
 ## Try it now
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/angelvicioso/vicious/tree/claude/logistics-platform-poc-x95492?quickstart=1)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/angelvicioso/efficio/tree/claude/logistics-platform-poc-x95492?quickstart=1)
 
 Click the button (you need a GitHub account with access to this repo). GitHub builds a private cloud copy of the app, fills it with **simulated** data and opens it in your browser: first start takes about 2–3 minutes. Then sign in with a demo login:
 
