@@ -73,6 +73,10 @@ export async function baseUrl(): Promise<string> {
   const configured = publicBaseUrl();
   if (configured) return configured;
   const h = await headers();
+  // Form submissions carry the address the visitor's browser is actually on; behind
+  // proxies like Codespaces this is more reliable than the Host header.
+  const origin = h.get("origin");
+  if (origin && origin !== "null") return origin.replace(/\/$/, "");
   const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
   const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
   return `${proto}://${host}`;
