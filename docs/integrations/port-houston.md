@@ -83,7 +83,7 @@ The generic guide shows 30-minute access tokens **with** refresh tokens (12h). P
 | # | Step | Owner | Status |
 |---|---|---|---|
 | 1 | **Permission**: confirm Efficio may show Port Houston data to exporters who use it, and that the credentials cover Barbours Cut as well as Bayport; ask about rate limits and whether they restrict access by IP address (Q-021) | Orlando | **Permission confirmed** (D-027); Barbours Cut, rate limits and IP rules still to confirm |
-| 2 | **First real call**: put the credentials in `web/.env.local` and run `npm run port-houston:check` on a laptop. It prints field names and value *formats* only, never real values, so the output is safe to share | Eduardo | Ready to run |
+| 2 | **First real call**: add the `PORT_HOUSTON_EVP_*` settings in Render (keep `PORT_ADAPTER=mock`), then press **Test Port Houston connection** on the super admin page (works on a phone). Or on a laptop: credentials in `web/.env.local`, then `npm run port-houston:check`. Either way the report shows field names and value *formats* only, never real values, so it's safe to share | Eduardo | Ready to run |
 | 3 | **Field mapping**: from the check's output (or the Swagger UI / sample responses), map bookings → vessel visit → dates, and containers / gate moves → container progress | Claude | Waits on 2 |
 | 4 | **Build the live connection** (`navis/adapter.ts`) with tests based on the real shapes, including tests that one customer never gets another's data (R-017) | Claude | Waits on 3 |
 | 5 | **Try it locally** with `PORT_ADAPTER=navis` against real bookings Orlando knows | Eduardo + Orlando | Waits on 4 |

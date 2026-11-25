@@ -256,3 +256,5 @@ table.containers th, table.containers td { font-size: 0.85rem; padding: 0.45rem 
 }
 table.containers th, table.containers td { white-space: nowrap; }
 .lock-line { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.35rem; flex-wrap: wrap; }
+.details-output { white-space: pre; overflow-x: auto; font-size: 0.75rem; max-height: 28rem; margin-top: 0.75rem; }
+.details-output + button { margin-top: 0.5rem; }

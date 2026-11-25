@@ -43,6 +43,8 @@ type FetchFn = typeof fetch;
 
 /** Refresh the token this long before it actually expires. */
 const EXPIRY_MARGIN_MS = 5 * 60 * 1000;
+/** Give up on any single request after this long. */
+const REQUEST_TIMEOUT_MS = 20_000;
 
 export class EvpClient {
   private token: { value: string; expiresAt: number } | null = null;
@@ -90,6 +92,7 @@ export class EvpClient {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body,
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
     if (!res.ok) throw new EvpError(`Token request failed (${res.status})`, res.status);
     const json = (await res.json()) as { access_token?: string; expires_in?: number };
@@ -115,6 +118,7 @@ export class EvpClient {
 
       const res = await this.fetchFn(url, {
         headers: { Authorization: `Bearer ${await this.getToken()}`, Accept: "application/json" },
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       });
       if (res.status === 401 && !retriedAuth) {
         // Token was revoked or expired early: get a new one and retry this page once.

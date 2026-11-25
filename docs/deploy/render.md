@@ -28,6 +28,11 @@ The repository contains a **Render Blueprint** (`render.yaml`) that describes th
 - **Demo logins never exist on the hosted copy.** `npm run demo:seed` (whose password is in the README) refuses to run on Render. Use **Add sample data** (step 8) instead.
 - **Backups (D-022):** Render takes daily snapshots of the disk. Check the disk's settings in Render to confirm and see how long they're kept. Database upgrades also write a safety copy next to the data file first.
 
+## Testing the Port Houston connection
+1. In **Environment**, add the five `PORT_HOUSTON_EVP_*` settings from `.env.example` (the client secret from Orlando's document). Keep `PORT_ADAPTER` as `mock`, so the app still shows simulated data. Save; Render redeploys.
+2. Sign in as a super admin. On **All organizations**, find **Port Houston connection** and press **Test Port Houston connection**.
+3. Press **Copy report** and send it to Claude. It shows ✓/✗ per data source and field names with masked formats, no real values.
+
 ## Changing settings
 In the service's **Environment** tab:
 

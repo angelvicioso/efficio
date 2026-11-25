@@ -13,7 +13,9 @@ import {
   unlockSuperAdminAction,
   addSampleDataAction,
   removeSampleDataAction,
+  checkPortHoustonAction,
 } from "./actions";
+import { portHoustonConfigured } from "@/lib/ports/navis/check";
 import { hasSampleData } from "@/lib/demo/sample";
 import { getPortAdapter } from "@/lib/ports";
 
@@ -128,6 +130,25 @@ export default async function AdminPage() {
           )}
         </section>
       )}
+
+      <section className="card">
+        <h2>Port Houston connection</h2>
+        {portHoustonConfigured() ? (
+          <>
+            <p className="muted small">
+              Signs in to Port Houston and calls each data source once. The report shows field names and formats only (for
+              example dates as 9999-99-99), never real values, so it’s safe to share. The app keeps showing{" "}
+              {getPortAdapter().source === "mock" ? "simulated" : "live"} data either way.
+            </p>
+            <ActionForm action={checkPortHoustonAction} submitLabel="Test Port Houston connection" pendingLabel="Testing… (up to a minute)" variant="secondary" />
+          </>
+        ) : (
+          <p className="muted small">
+            Not configured. Add the <code>PORT_HOUSTON_EVP_*</code> settings in the hosting dashboard (see docs/deploy/render.md) to test the
+            connection here.
+          </p>
+        )}
+      </section>
 
       <section className="card">
         <h2>Super admins</h2>

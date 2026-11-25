@@ -105,3 +105,11 @@ export async function removeSampleDataAction(_prev: FormState, _formData: FormDa
   revalidatePath("/admin");
   return { message: n ? `Removed ${n} sample compan${n === 1 ? "y" : "ies"} and their bookings.` : "No sample data to remove." };
 }
+
+/** Super admin diagnostic: one call to each Port Houston endpoint, masked output (S-013). */
+export async function checkPortHoustonAction(_prev: FormState, _formData: FormData): Promise<FormState> {
+  await requireSuperAdmin();
+  const { runPortHoustonCheck } = await import("@/lib/ports/navis/check");
+  const lines = await runPortHoustonCheck();
+  return { details: lines.join("\n") };
+}

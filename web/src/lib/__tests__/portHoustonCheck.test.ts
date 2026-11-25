@@ -19,3 +19,31 @@ group("port-houston:check output never shows real values", () => {
     expect(out).not.toMatch(/DOB196|MAEU|2026/);
   });
 });
+
+group("runPortHoustonCheck", () => {
+  it("reports sign-in and each endpoint without real values", async () => {
+    const { runPortHoustonCheck } = await import("../ports/navis/check");
+    const { EvpClient } = await import("../ports/navis/evpClient");
+    const fetchFn = (async (url: string | URL) => {
+      const u = String(url);
+      if (u.endsWith("/token")) return new Response(JSON.stringify({ access_token: "t", expires_in: 14400 }));
+      if (u.includes("orders/bookings")) return new Response("{}", { status: 403 });
+      if (u.includes("vesselvisits")) return new Response(JSON.stringify({ content: [{ vesName: "REAL SHIP", lines: [{ lineId: "MAEU" }] }] }));
+      return new Response(JSON.stringify({ content: [] }));
+    }) as typeof fetch;
+    const client = new EvpClient({ baseUrl: "https://n4.test/v3/evp", tokenUrl: "https://n4.test/token", clientId: "a", clientSecret: "b", operator: "POHA" }, fetchFn);
+    const report = (await runPortHoustonCheck(client)).join("\n");
+    expect(report).toContain("✓ Signed in");
+    expect(report).toContain('vesName: "AAAA AAAA"');
+    expect(report).toMatch(/orders\/bookings[\s\S]*✗ EVP orders\/bookings failed \(403\)/);
+    expect(report).not.toMatch(/REAL SHIP|MAEU/);
+  });
+
+  it("explains missing settings instead of failing", async () => {
+    const { runPortHoustonCheck } = await import("../ports/navis/check");
+    const saved = { ...process.env };
+    for (const k of Object.keys(process.env)) if (k.startsWith("PORT_HOUSTON_EVP_")) delete process.env[k];
+    expect((await runPortHoustonCheck()).join("")).toMatch(/Missing Port Houston EVP settings/);
+    Object.assign(process.env, saved);
+  });
+});

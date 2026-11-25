@@ -7,6 +7,8 @@ export interface FormState {
   error?: string | null;
   message?: string | null;
   link?: string | null;
+  /** Preformatted text to show below the form, e.g. a diagnostic report. */
+  details?: string | null;
 }
 
 type Action = (prev: FormState, formData: FormData) => Promise<FormState>;
@@ -52,6 +54,7 @@ export function ActionForm({
       )}
       {state.message && <p className="form-message">{state.message}</p>}
       {state.link && <CopyLink link={state.link} />}
+      {state.details && <DetailsOutput text={state.details} />}
     </form>
   );
 }
@@ -74,6 +77,29 @@ function CopyLink({ link }: { link: string }) {
         }}
       >
         {copied ? "Copied" : "Copy"}
+      </button>
+    </div>
+  );
+}
+
+function DetailsOutput({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <div>
+      <pre className="details-output">{text}</pre>
+      <button
+        type="button"
+        className="secondary small-button"
+        onClick={async () => {
+          try {
+            await navigator.clipboard.writeText(text);
+            setCopied(true);
+          } catch {
+            setCopied(false);
+          }
+        }}
+      >
+        {copied ? "Copied" : "Copy report"}
       </button>
     </div>
   );
