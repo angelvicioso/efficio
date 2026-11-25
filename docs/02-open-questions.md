@@ -22,6 +22,7 @@ Questions for the team. Each question has an **Owner** (see [Team](00-team.md)):
 | Q-013 | 🟢 | All | **Who has final say on product decisions** (or how do we break ties)? Default would be the CEO, Orlando. | Fills in the decision log's "who decided" entries. Names and titles are answered (see [Team](00-team.md)). | |
 | Q-014 | 🟠 | All | **How much time can each person give per week**, and is anyone else besides Javier part time? | Sets a realistic POC timeline and decides who takes on time-heavy work like outreach. | |
 | Q-015 | 🟢 | Javier | **Does Javier's firm or network include industrial/warehouse properties, owners or operators?** | A possible path to the warehouse side of the platform (E-04). Also check for conflicts with his employer. | |
+| Q-016 | 🟠 | Eduardo | **How will the team collaborate with an AI business analyst?** Options: (A) Slack channel with Claude, where questions are threads that tag their owner and the repo stays the official record (recommended); (B) GitHub Issues with Claude; (C) a shared web page. Needs: whether everyone is OK with Slack, plus everyone's GitHub and Slack usernames. | Questions go to one person but everyone sees the answers; the agent pushes back on answers and keeps the docs in sync. Also pending: write the analyst rulebook (how the agent presses on answers, what counts as answered, how docs get updated). | _Parked 2026-11-25, to revisit._ |
 
 ## Answered
 
