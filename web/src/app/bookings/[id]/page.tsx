@@ -1,0 +1,163 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { bookingService } from "@/lib/service";
+import { receivingStatus } from "@/lib/domain/status";
+import { diffSnapshots } from "@/lib/domain/changes";
+import { CUTOFF_LABELS, TERMINAL_LABELS } from "@/lib/domain/types";
+import { formatAgo, formatHouston } from "@/lib/format";
+import { StatusBadge } from "../../StatusBadge";
+import { refreshBookingAction, removeBookingAction } from "../../actions";
+
+export const dynamic = "force-dynamic";
+
+export default async function BookingPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const service = bookingService();
+  const booking = service.get(Number(id));
+  if (!booking) notFound();
+
+  const latest = booking.latest;
+  const snap = latest?.data ?? null;
+  const changes = snap && booking.previous?.data ? diffSnapshots(booking.previous.data, snap) : [];
+  const history = service.history(booking.id, 10);
+  const status = snap ? receivingStatus(snap) : null;
+
+  return (
+    <>
+      <p>
+        <Link href="/">← All bookings</Link>
+      </p>
+
+      <section className="hero">
+        <div>
+          <div className="muted small">Booking</div>
+          <h1 className="booking-number">{booking.bookingNumber}</h1>
+          {latest && (
+            <div className="muted small">
+              Updated {formatAgo(latest.fetchedAt)} ({formatHouston(latest.fetchedAt)})
+            </div>
+          )}
+        </div>
+        <div className="hero-actions">
+          {status && <StatusBadge status={status} large />}
+          <form action={refreshBookingAction}>
+            <input type="hidden" name="id" value={booking.id} />
+            <button type="submit">Refresh now</button>
+          </form>
+        </div>
+      </section>
+
+      {latest?.error && (
+        <div className="callout callout-error" role="alert">
+          <strong>Couldn’t get data from the port.</strong> {latest.error}
+        </div>
+      )}
+
+      {snap && !snap.onFile && (
+        <div className="callout">
+          <strong>The terminal doesn’t have this booking yet.</strong> This is normal right after the carrier confirms a
+          booking: the carrier sends it to the terminal separately. Efficio will keep checking. If it still hasn’t appeared
+          close to the vessel’s receiving window, check the booking number with the carrier.
+        </div>
+      )}
+
+      {changes.length > 0 && (
+        <section className="card card-changes">
+          <h2>Changed since last update</h2>
+          <ul className="changes">
+            {changes.map((c) => (
+              <li key={c.field}>
+                <strong>{c.field}:</strong> {fmtValue(c.before)} → <span className="after">{fmtValue(c.after)}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {snap?.onFile && (
+        <div className="grid">
+          <section className="card">
+            <h2>Receiving window</h2>
+            <dl>
+              <dt>Opens (ERD)</dt>
+              <dd>{formatHouston(snap.receivingOpensAt)}</dd>
+              <dt>Closes (cargo cutoff)</dt>
+              <dd>{formatHouston(snap.cutoffs.find((c) => c.kind === "cargo")?.at)}</dd>
+            </dl>
+          </section>
+
+          <section className="card">
+            <h2>Cutoffs</h2>
+            {snap.cutoffs.length === 0 ? (
+              <p className="muted">The terminal hasn’t published cutoffs for this vessel yet.</p>
+            ) : (
+              <table className="compact">
+                <tbody>
+                  {snap.cutoffs.map((c) => (
+                    <tr key={c.kind}>
+                      <th scope="row">
+                        {CUTOFF_LABELS[c.kind]}
+                        <div className="muted small">set by {c.setBy}</div>
+                      </th>
+                      <td>{formatHouston(c.at)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            <p className="muted small">Documentation and VGM cutoffs come from the carrier and aren’t shown yet (Q-018).</p>
+          </section>
+
+          <section className="card">
+            <h2>Vessel &amp; terminal</h2>
+            <dl>
+              <dt>Terminal</dt>
+              <dd>{snap.terminal ? TERMINAL_LABELS[snap.terminal] : "—"}</dd>
+              <dt>Vessel / voyage</dt>
+              <dd>
+                {snap.vesselVisit ? `${snap.vesselVisit.vesselName} / ${snap.vesselVisit.voyage ?? "—"}` : "—"}
+              </dd>
+              <dt>Vessel ETA</dt>
+              <dd>{formatHouston(snap.vesselVisit?.eta)}</dd>
+              <dt>Vessel ETD</dt>
+              <dd>{formatHouston(snap.vesselVisit?.etd)}</dd>
+              <dt>Carrier</dt>
+              <dd>{snap.carrierCode ?? "—"}</dd>
+            </dl>
+          </section>
+        </div>
+      )}
+
+      {snap && (
+        <details className="card">
+          <summary>What the port sent (raw data)</summary>
+          <pre>{JSON.stringify(snap.raw, null, 2)}</pre>
+        </details>
+      )}
+
+      <section className="card">
+        <h2>Update history</h2>
+        <ol className="history">
+          {history.map((h) => (
+            <li key={h.id}>
+              {formatHouston(h.fetchedAt)} · {h.source}
+              {h.error ? <span className="error-text"> · error</span> : h.data && !h.data.onFile ? " · not on file" : ""}
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <form action={removeBookingAction} className="remove">
+        <input type="hidden" name="id" value={booking.id} />
+        <button type="submit" className="danger">
+          Stop tracking this booking
+        </button>
+      </form>
+    </>
+  );
+}
+
+function fmtValue(v: string | null): string {
+  if (!v) return "—";
+  return /^\d{4}-\d{2}-\d{2}T/.test(v) ? formatHouston(v) : v;
+}

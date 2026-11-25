@@ -7,6 +7,9 @@ A platform that brings together the entities involved in moving export cargo —
 **Primary user (POC):** the Exporter.
 **First capability:** an exporter enters a booking and sees, in near-real time, what the port/terminal is reporting about it.
 
+## Run the app
+See [web/README.md](web/README.md). Short version: `cd web && npm install && npm run dev`, then open http://localhost:3000 and try booking `HOU1002`.
+
 ## How this project is run
 
 We run this like an early-stage startup: ideas become **stories**, unknowns become **questions**, risks become **callouts**, and every choice we make is logged as a **decision**. Everything has an ID so it can be referenced in conversation, commits, and PRs.

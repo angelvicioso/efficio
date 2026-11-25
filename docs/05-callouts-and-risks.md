@@ -13,6 +13,7 @@
 | R-009 | **Credential handling.** The access document contains the client secret as an image, and the document itself could be forwarded or committed by accident. | Anyone with the secret can query terminal data as us. | Keep the secret in a password manager; use a local `.env` (ignored by git); `.gitignore` blocks `.env` and `.docx` files. Never post credentials in Slack or the docs. Ask the issuer to rotate the secret if the document has been widely shared. | Open |
 | R-010 | **The units endpoint only shows containers the terminal already knows about.** Before gate-in, a booking may have no units. | The receiving window and cutoffs (D-008) can't come from units alone. | Use the booking and vessel visit data in N4 (spike S-013). | Open |
 | R-011 | **Port access depends on one person.** The credentials and relationship sit with Orlando. | If Orlando is unavailable, or the credential is tied to him personally, access could stall. | Record the issuer contact in the integration notes; ask whether credentials can be issued to Efficio as a company once the company is formed. | Open |
+| R-012 | **No login yet (S-005).** Anyone who can reach the app can see and change every booking. | Exposing real booking data. | Run locally or on a private network only until S-005 is built. | Open |
 | R-005 | **"Real-time" expectations.** Terminal data itself may only update periodically; rate limits apply. | Users may expect instant updates. | Define refresh target (Q-006); show "last updated" on every screen. | Open |
 
 ## Assumptions (to validate)
