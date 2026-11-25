@@ -123,3 +123,46 @@ pre { overflow-x: auto; font-size: 0.8rem; background: var(--bg); padding: 0.75r
   .add-row { flex-direction: column; }
   .booking-number { font-size: 1.6rem; }
 }
+
+/* ---------- Accounts & admin ---------- */
+.header-left, .header-right { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.header-link { color: var(--text); text-decoration: none; font-size: 0.9rem; }
+.header-link:hover { text-decoration: underline; }
+.link-button { background: none; border: none; padding: 0; color: var(--accent); font-weight: 500; text-decoration: underline; }
+
+.auth-card { max-width: 420px; margin: 2rem auto; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; }
+.stack { display: flex; flex-direction: column; gap: 0.85rem; align-items: stretch; }
+.stack label { display: flex; flex-direction: column; gap: 0.3rem; font-weight: 600; }
+.stack label .small { font-weight: 400; }
+.stack > button { align-self: flex-start; }
+.stack .checkbox { flex-direction: row; align-items: center; gap: 0.5rem; font-weight: 400; }
+.checkbox input { flex: none; }
+select { font: inherit; padding: 0.5rem 0.6rem; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
+.form-message { color: var(--green-fg); margin: 0; }
+.copy-link { display: flex; gap: 0.5rem; }
+.copy-link input { font-size: 0.85rem; }
+
+.add-form { display: grid; grid-template-columns: 1fr auto; gap: 0.5rem; align-items: center; }
+.add-form label, .add-form .form-error { grid-column: 1 / -1; margin: 0; }
+
+.inline { display: inline-flex; align-items: center; gap: 0.5rem; margin-left: 0.5rem; flex-wrap: wrap; }
+td .inline { margin-left: 0; }
+.inline .form-error { flex-basis: 100%; font-size: 0.85rem; }
+.inline button { padding: 0.35rem 0.75rem; font-size: 0.85rem; }
+.inline-form { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.75rem; }
+.inline-form .form-error { flex-basis: 100%; }
+.actions-cell { text-align: right; }
+.plain-list { list-style: none; padding: 0; margin: 0 0 1rem; }
+.plain-list li { padding: 0.35rem 0; border-bottom: 1px solid var(--border); }
+h3 { font-size: 0.95rem; margin: 1.25rem 0 0.5rem; }
+.section { margin-bottom: 1.5rem; }
+.table-wrap.flat { border: none; border-radius: 0; }
+.table-wrap.flat th:first-child, .table-wrap.flat td:first-child { padding-left: 0; }
+
+.admin-banner { background: var(--amber-bg); color: var(--amber-fg); border-radius: 10px; padding: 0.6rem 1rem; margin-bottom: 1rem; font-size: 0.9rem; }
+.admin-banner a { color: inherit; }
+.org-header { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem; flex-wrap: wrap; padding-bottom: 0.75rem; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border); }
+.org-name { font-weight: 700; font-size: 1.1rem; }
+.org-nav { display: flex; gap: 1rem; }
+.org-nav a { font-weight: 600; text-decoration: none; }
+.org-nav a:hover { text-decoration: underline; }

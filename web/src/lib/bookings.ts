@@ -12,6 +12,7 @@ export interface StoredSnapshot {
 
 export interface TrackedBooking {
   id: number;
+  orgId: number;
   bookingNumber: string;
   createdAt: string;
   latest: StoredSnapshot | null;
@@ -32,28 +33,30 @@ export class BookingService {
     private readonly adapter: PortAdapter,
   ) {}
 
-  /** S-001: start tracking a booking and fetch it once right away. */
-  async add(input: string): Promise<{ id: number; created: boolean }> {
+  /** S-001: start tracking a booking for an organization and fetch it once right away. */
+  async add(orgId: number, input: string): Promise<{ id: number; created: boolean }> {
     const bookingNumber = normalizeBookingNumber(input);
     if (!BOOKING_NUMBER.test(bookingNumber)) {
       throw new Error("Booking numbers should be 4 to 30 letters, digits or dashes.");
     }
-    const existing = this.db.prepare("SELECT id FROM bookings WHERE booking_number = ?").get(bookingNumber) as
+    const existing = this.db
+      .prepare("SELECT id FROM bookings WHERE org_id = ? AND booking_number = ?")
+      .get(orgId, bookingNumber) as
       | { id: number }
       | undefined;
     if (existing) return { id: existing.id, created: false };
 
     const result = this.db
-      .prepare("INSERT INTO bookings (booking_number, created_at) VALUES (?, ?)")
-      .run(bookingNumber, new Date().toISOString());
+      .prepare("INSERT INTO bookings (org_id, booking_number, created_at) VALUES (?, ?, ?)")
+      .run(orgId, bookingNumber, new Date().toISOString());
     const id = Number(result.lastInsertRowid);
-    await this.refresh(id);
+    await this.refresh(orgId, id);
     return { id, created: true };
   }
 
   /** S-012: fetch the latest data and store it as a new snapshot (errors are stored too). */
-  async refresh(id: number): Promise<StoredSnapshot> {
-    const row = this.db.prepare("SELECT booking_number FROM bookings WHERE id = ?").get(id) as
+  async refresh(orgId: number, id: number): Promise<StoredSnapshot> {
+    const row = this.db.prepare("SELECT booking_number FROM bookings WHERE id = ? AND org_id = ?").get(id, orgId) as
       | { booking_number: string }
       | undefined;
     if (!row) throw new Error(`Booking ${id} not found`);
@@ -72,30 +75,36 @@ export class BookingService {
     return { id: Number(result.lastInsertRowid), fetchedAt, source: this.adapter.source, data, error };
   }
 
-  async refreshAll(): Promise<number> {
-    const rows = this.db.prepare("SELECT id FROM bookings").all() as { id: number }[];
-    for (const r of rows) await this.refresh(r.id);
+  /** Refresh every booking (or one organization's). Used by the scheduled refresh. */
+  async refreshAll(orgId?: number): Promise<number> {
+    const rows = (
+      orgId === undefined
+        ? this.db.prepare("SELECT id, org_id FROM bookings").all()
+        : this.db.prepare("SELECT id, org_id FROM bookings WHERE org_id = ?").all(orgId)
+    ) as { id: number; org_id: number }[];
+    for (const r of rows) await this.refresh(r.org_id, r.id);
     return rows.length;
   }
 
-  remove(id: number): void {
-    this.db.prepare("DELETE FROM bookings WHERE id = ?").run(id);
+  remove(orgId: number, id: number): void {
+    this.db.prepare("DELETE FROM bookings WHERE id = ? AND org_id = ?").run(id, orgId);
   }
 
-  list(): TrackedBooking[] {
+  list(orgId: number): TrackedBooking[] {
     const rows = this.db
-      .prepare("SELECT id, booking_number, created_at FROM bookings ORDER BY created_at DESC, id DESC")
-      .all() as { id: number; booking_number: string; created_at: string }[];
+      .prepare("SELECT id, org_id, booking_number, created_at FROM bookings WHERE org_id = ? ORDER BY created_at DESC, id DESC")
+      .all(orgId) as unknown as BookingRow[];
     return rows.map((r) => this.toTracked(r));
   }
 
-  get(id: number): TrackedBooking | null {
-    const r = this.db.prepare("SELECT id, booking_number, created_at FROM bookings WHERE id = ?").get(id) as
-      | { id: number; booking_number: string; created_at: string }
-      | undefined;
+  get(orgId: number, id: number): TrackedBooking | null {
+    const r = this.db
+      .prepare("SELECT id, org_id, booking_number, created_at FROM bookings WHERE id = ? AND org_id = ?")
+      .get(id, orgId) as BookingRow | undefined;
     return r ? this.toTracked(r) : null;
   }
 
+  /** Snapshot history. Callers must have already checked the booking belongs to the user's org (via get). */
   history(id: number, limit = 20): StoredSnapshot[] {
     const rows = this.db
       .prepare("SELECT id, fetched_at, source, data, error FROM snapshots WHERE booking_id = ? ORDER BY id DESC LIMIT ?")
@@ -103,7 +112,7 @@ export class BookingService {
     return rows.map(toStored);
   }
 
-  private toTracked(r: { id: number; booking_number: string; created_at: string }): TrackedBooking {
+  private toTracked(r: BookingRow): TrackedBooking {
     const latest = this.history(r.id, 1)[0] ?? null;
     const prevRow = latest
       ? (this.db
@@ -114,12 +123,20 @@ export class BookingService {
       : undefined;
     return {
       id: r.id,
+      orgId: r.org_id,
       bookingNumber: r.booking_number,
       createdAt: r.created_at,
       latest,
       previous: prevRow ? toStored(prevRow) : null,
     };
   }
+}
+
+interface BookingRow {
+  id: number;
+  org_id: number;
+  booking_number: string;
+  created_at: string;
 }
 
 interface SnapshotRow {

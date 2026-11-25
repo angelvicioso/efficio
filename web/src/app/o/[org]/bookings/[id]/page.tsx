@@ -1,19 +1,21 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { requireOrgAccess } from "@/lib/auth/session";
 import { bookingService } from "@/lib/service";
 import { receivingStatus } from "@/lib/domain/status";
 import { diffSnapshots } from "@/lib/domain/changes";
 import { CUTOFF_LABELS, TERMINAL_LABELS } from "@/lib/domain/types";
 import { formatAgo, formatHouston } from "@/lib/format";
-import { StatusBadge } from "../../StatusBadge";
+import { StatusBadge } from "../../../../StatusBadge";
 import { refreshBookingAction, removeBookingAction } from "../../actions";
 
 export const dynamic = "force-dynamic";
 
-export default async function BookingPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export default async function BookingPage({ params }: { params: Promise<{ org: string; id: string }> }) {
+  const { org: slug, id } = await params;
+  const { org } = await requireOrgAccess(slug);
   const service = bookingService();
-  const booking = service.get(Number(id));
+  const booking = service.get(org.id, Number(id));
   if (!booking) notFound();
 
   const latest = booking.latest;
@@ -25,7 +27,7 @@ export default async function BookingPage({ params }: { params: Promise<{ id: st
   return (
     <>
       <p>
-        <Link href="/">← All bookings</Link>
+        <Link href={`/o/${org.slug}`}>← All bookings</Link>
       </p>
 
       <section className="hero">
@@ -41,6 +43,7 @@ export default async function BookingPage({ params }: { params: Promise<{ id: st
         <div className="hero-actions">
           {status && <StatusBadge status={status} large />}
           <form action={refreshBookingAction}>
+            <input type="hidden" name="org" value={org.slug} />
             <input type="hidden" name="id" value={booking.id} />
             <button type="submit">Refresh now</button>
           </form>
@@ -148,6 +151,7 @@ export default async function BookingPage({ params }: { params: Promise<{ id: st
       </section>
 
       <form action={removeBookingAction} className="remove">
+        <input type="hidden" name="org" value={org.slug} />
         <input type="hidden" name="id" value={booking.id} />
         <button type="submit" className="danger">
           Stop tracking this booking

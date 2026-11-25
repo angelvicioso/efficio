@@ -23,3 +23,6 @@
 | **Unit** | N4's word for a container (or other piece of equipment) at the terminal. |
 | **Vessel visit** | N4's record of one vessel call, which holds the receiving window and cutoffs. |
 | **POD** | Port of discharge, where the container is unloaded. |
+| **Organization** | One customer company on Efficio (e.g. an exporter), with its own bookings and users. Identified by its email domains. |
+| **Super admin** | An Efficio team member who can see and manage every organization. |
+| **Org admin / member** | A customer's users. Admins manage their team; members track bookings. |

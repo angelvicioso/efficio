@@ -19,7 +19,11 @@ Stories are **Draft** until their blocking questions are answered and acceptance
 | S-002 | As an **exporter**, I want to **see my booking's receiving window (ERD to cargo cutoff) and cutoffs** as Port Houston reports them, plus whether the booking is on file at the terminal, so that I know when I can deliver and the deadline. | Q-018, R-006 | **Built (mock)** |
 | S-003 | As an **exporter**, I want a **countdown view of the receiving window** (not open yet, open with X days left, closing soon, closed), so I can act before the cutoff. A fuller timeline (gated in → loaded → departed) comes later. | Q-018 | **Built (mock)**, 48h threshold pending Q-022 |
 | S-004 | As an **exporter**, I want a **list of all my tracked bookings** with key dates and status, so I can spot problems across shipments. | Q-007 | **Built (mock)** |
-| S-005 | As an **exporter**, I want to **sign in to my company account**, so my bookings are private. | Q-010 | Draft |
+| S-005 | As an **exporter**, I want to **sign in to my company account**, so my bookings are private. | — | **Done**: invite-only accounts, org workspaces, org admin/member roles |
+| S-006 | As a **super admin**, I want to **create customer organizations, set their email domains, and open any of them**, so the Efficio team can onboard and support customers. | — | **Done** |
+| S-007 | As an **org admin**, I want to **invite teammates, change roles and disable accounts**, so my company manages its own access. | — | **Done** (invite links are copied by hand until S-008) |
+| S-008 | As a **user**, I want **invites and password resets by email**, so nobody has to pass links around by hand. | Q-025 | Draft |
+| S-009 | As a **super admin**, I want an **activity log** of who did what (in particular super admins acting inside a customer's workspace), so we can answer customer questions and audits. | — | Draft |
 
 ### E-02 · Port/terminal data integration
 | ID | Story | Blocked by | Status |

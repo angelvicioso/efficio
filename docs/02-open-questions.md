@@ -14,7 +14,6 @@ Questions for the team. Each question has an **Owner** (see [Team](00-team.md)):
 | Q-007 | 🟠 | Orlando | **Do you have a pilot exporter (or your own experience) we can model on?** Typical volume — bookings per week? | Real workflows beat assumptions; volume affects UI (list vs. dashboard). | |
 | Q-008 | 🟠 | Orlando | **Should the ocean carrier's data be in the POC too**, or strictly port data? | The carrier owns the booking and vessel schedule; port and carrier data often disagree — showing that gap may be the "aha". | |
 | Q-009 | 🟢 | Eduardo | **Platform & tech preferences?** Web app vs. mobile; any preferred stack, cloud, or team skills? | **Default chosen (D-011):** a Next.js web app in TypeScript with SQLite. Say so if you'd prefer something else. Hosting is still open. | _Default in use_ |
-| Q-010 | 🟢 | Eduardo | **Single exporter or multiple companies (multi-tenant) in the POC?** Multiple users per exporter? | Affects auth and data model early. | |
 | Q-013 | 🟢 | All | **Who has final say on product decisions** (or how do we break ties)? Default would be the CEO, Orlando. | Fills in the decision log's "who decided" entries. Names and titles are answered (see [Team](00-team.md)). | |
 | Q-014 | 🟠 | All | **How much time can each person give per week**, and is anyone else besides Javier part time? | Sets a realistic POC timeline and decides who takes on time-heavy work like outreach. | |
 | Q-015 | 🟢 | Javier | **Does Javier's firm or network include industrial/warehouse properties, owners or operators?** | A possible path to the warehouse side of the platform (E-04). Also check for conflicts with his employer. | |
@@ -25,6 +24,9 @@ Questions for the team. Each question has an **Owner** (see [Team](00-team.md)):
 | Q-021 | 🟠 | Orlando | **Ask the Port Houston/Navis contact who issued Orlando's credentials:** (1) the full EVP API reference (especially the booking and vessel visit endpoints), (2) whether access covers **Barbours Cut** as well as Bayport (scope says `POHA_BPT_PROD`), (3) whether Efficio may **show this data to exporters** who use the platform, and (4) the rate limits. | Unblocks spike S-013 and confirms R-008 (terms of use). One conversation covers everything. | |
 | Q-022 | 🟠 | Orlando | **When should a booking count as "closing soon"?** The app uses **48 hours before the cargo cutoff** for now. | Drives the amber warning and, later, alert timing (S-021). | |
 | Q-023 | 🟢 | Orlando | **What do real Port Houston booking numbers look like?** (length, letters/digits/dashes, carrier prefixes) The app accepts 4 to 30 letters, digits or dashes. | Catches typos when exporters add a booking. | |
+| Q-024 | 🟠 | Eduardo | **Confirm how "per domain" should work.** Built: each organization has one or more email domains; only people with those domains can be invited (super admins can override); super admins see every organization and its domains. **Not built:** people with a matching domain joining on their own without an invite. That needs email verification first (S-008). Is this what you meant? | Decides whether self sign-up by domain is needed for the POC. | |
+| Q-025 | 🟢 | Eduardo | **Which email service should Efficio use** for invites and password resets (e.g. Postmark, Resend, Amazon SES), and from which address? | Needed for S-008. Javier may want to weigh in on cost. | |
+| Q-026 | 🟢 | Orlando | **Will customers want to sign in with their company Microsoft/Google accounts (SSO)?** | Larger exporters often require it. It changes the login design, so better to know early. | |
 
 ## Answered
 
@@ -35,4 +37,5 @@ Questions for the team. Each question has an **Owner** (see [Team](00-team.md)):
 | Q-004 | What booking information matters most? | **Start with the booking (receiving) window and cutoffs.** Answered by Eduardo. | D-008 |
 | Q-011 | Working product name? | **Efficio.** | D-009 |
 | Q-020 | Whose credentials are in the "Getting Data" document? | Efficio is our product. The `pha-efficio` client was issued to **Orlando** for Efficio. | D-010 |
+| Q-010 | Single exporter or multiple companies (multi-tenant)? | **Multiple companies.** Each customer is an organization with its own data and users; the Efficio team are super admins over all of them. Answered by Eduardo. | D-013 |
 | Q-012 | What is the third team member's background? | Javier: financial associate/analyst at a commercial real estate firm (full-time job). Strong in finance and business. | D-004 |
