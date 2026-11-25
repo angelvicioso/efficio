@@ -11,6 +11,7 @@ We run this like an early-stage startup: ideas become **stories**, unknowns beco
 
 | Doc | What's in it | ID prefix |
 |---|---|---|
+| [Team & roles](docs/00-team.md) | Who owns what | — |
 | [Product brief](docs/01-product-brief.md) | Vision, users, problem, POC scope | — |
 | [Open questions](docs/02-open-questions.md) | Things the founder needs to answer | `Q-###` |
 | [Backlog](docs/03-backlog.md) | Epics and user stories, with status | `E-##`, `S-###` |
