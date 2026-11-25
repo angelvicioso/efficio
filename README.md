@@ -24,6 +24,9 @@ Password for all demo logins: `efficio-demo-2026`. **Demo data only**: it's crea
 
 The first time, GitHub may ask you to confirm creating the codespace. When you're done, stop it from github.com/codespaces so it doesn't use up your free monthly hours.
 
+## Hosting
+The team's hosted copy runs on **Render** (simulated data). Setup and day-to-day notes: [docs/deploy/render.md](docs/deploy/render.md).
+
 ## Run the app
 See [web/README.md](web/README.md). Short version: `cd web && npm install && npm run dev`, then open http://localhost:3000 and try booking `HOU1002`.
 

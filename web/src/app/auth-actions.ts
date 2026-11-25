@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { AccountError, MAX_FAILED_LOGINS } from "@/lib/auth/accounts";
 import { formatTime } from "@/lib/format";
+import { setupTokenValid } from "@/lib/auth/setupToken";
 import { endSession, homePath, startSession } from "@/lib/auth/session";
 import { accountService } from "@/lib/service";
 import type { FormState } from "./ActionForm";
@@ -33,6 +34,8 @@ export async function logoutAction(): Promise<void> {
 }
 
 export async function setupAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  // Checked here too: server actions can be called directly, not just from the page.
+  if (!setupTokenValid(String(formData.get("setupToken") ?? ""))) return { error: "The setup link is missing or wrong." };
   let userId: number;
   try {
     const user = await accountService().setupFirstSuperAdmin({

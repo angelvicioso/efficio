@@ -58,3 +58,25 @@ describe("refreshDue", () => {
     expect(await s.refreshDue(inThreeDays)).toEqual({ refreshed: 1, skipped: 1 });
   });
 });
+
+describe("hosting helpers", () => {
+  it("setup token: open without one, required and exact when set", async () => {
+    const { setupTokenRequired, setupTokenValid } = await import("../auth/setupToken");
+    const none = {} as unknown as NodeJS.ProcessEnv;
+    const set = { EFFICIO_SETUP_TOKEN: "s3cret-token" } as unknown as NodeJS.ProcessEnv;
+    expect(setupTokenRequired(none)).toBe(false);
+    expect(setupTokenValid(undefined, none)).toBe(true);
+    expect(setupTokenRequired(set)).toBe(true);
+    expect(setupTokenValid(undefined, set)).toBe(false);
+    expect(setupTokenValid("wrong", set)).toBe(false);
+    expect(setupTokenValid("s3cret-token", set)).toBe(true);
+  });
+
+  it("public address: explicit setting, then Render, then Codespaces", async () => {
+    const { publicBaseUrl } = await import("../publicUrl");
+    const env = (o: object) => o as unknown as NodeJS.ProcessEnv;
+    expect(publicBaseUrl(env({ RENDER_EXTERNAL_URL: "https://efficio.onrender.com/" }))).toBe("https://efficio.onrender.com");
+    expect(publicBaseUrl(env({ EFFICIO_BASE_URL: "https://x.test", RENDER_EXTERNAL_URL: "https://efficio.onrender.com" }))).toBe("https://x.test");
+    expect(publicBaseUrl(env({}))).toBeNull();
+  });
+});
