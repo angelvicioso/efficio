@@ -19,6 +19,7 @@ We run this like an early-stage startup: ideas become **stories**, unknowns beco
 | [Callouts & risks](docs/05-callouts-and-risks.md) | Risks, assumptions, things to watch | `R-###`, `A-###` |
 | [Glossary](docs/06-glossary.md) | Shipping/logistics terms used in this project | — |
 | [Interviews](docs/interviews/) | Interview guides and notes with the team and customers | — |
+| [Integrations](docs/integrations/) | Technical notes for each data source (no secrets) | — |
 
 ### Status vocabulary
 - **Questions:** `Open` → `Answered` (answer recorded + linked decision if any)

@@ -18,3 +18,8 @@
 | **Port Houston** | The public port authority that owns and operates Houston's two container terminals, **Barbours Cut** and **Bayport**. |
 | **Lynx** | Port Houston's web portal for customers, including a booking inquiry view. |
 | **GetBookingInquiry** | Port Houston API call that checks whether an export booking is on file in the terminal system and returns routing details. |
+| **Navis N4** | The terminal operating system Port Houston uses. The original source of terminal data. |
+| **EVP API** | Navis's REST API for querying N4 data (e.g., `inventory/units`). Hosted on Navis Cloud. |
+| **Unit** | N4's word for a container (or other piece of equipment) at the terminal. |
+| **Vessel visit** | N4's record of one vessel call, which holds the receiving window and cutoffs. |
+| **POD** | Port of discharge, where the container is unloaded. |
