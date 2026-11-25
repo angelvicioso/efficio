@@ -29,6 +29,9 @@ export function ActionForm({
   const [state, formAction, pending] = useActionState(action, {});
   return (
     <form
+      // If the page's JavaScript hasn't loaded, the browser submits the form by itself:
+      // POST keeps fields (passwords!) out of the address bar and server logs.
+      method="post"
       // Submitting through onSubmit (instead of the action prop) stops React from clearing
       // the fields afterwards, so people don't retype everything after an error.
       onSubmit={(e) => {
