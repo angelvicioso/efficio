@@ -57,12 +57,13 @@ export class EvpClient {
   ) {}
 
   static fromEnv(env: NodeJS.ProcessEnv = process.env): EvpClient {
+    // Trimmed: a stray space pasted into a hosting dashboard would otherwise break sign-in.
     const required = {
-      baseUrl: env.PORT_HOUSTON_EVP_BASE_URL,
-      tokenUrl: env.PORT_HOUSTON_EVP_TOKEN_URL,
-      clientId: env.PORT_HOUSTON_EVP_CLIENT_ID,
-      clientSecret: env.PORT_HOUSTON_EVP_CLIENT_SECRET,
-      operator: env.PORT_HOUSTON_EVP_OPERATOR,
+      baseUrl: env.PORT_HOUSTON_EVP_BASE_URL?.trim(),
+      tokenUrl: env.PORT_HOUSTON_EVP_TOKEN_URL?.trim(),
+      clientId: env.PORT_HOUSTON_EVP_CLIENT_ID?.trim(),
+      clientSecret: env.PORT_HOUSTON_EVP_CLIENT_SECRET?.trim(),
+      operator: env.PORT_HOUSTON_EVP_OPERATOR?.trim(),
     };
     const missing = Object.entries(required)
       .filter(([, v]) => !v)
@@ -94,7 +95,7 @@ export class EvpClient {
       body,
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
-    if (!res.ok) throw new EvpError(`Token request failed (${res.status})`, res.status);
+    if (!res.ok) throw new EvpError(`Token request failed (${res.status})${await tokenErrorReason(res)}`, res.status);
     const json = (await res.json()) as { access_token?: string; expires_in?: number };
     if (!json.access_token) throw new EvpError("Token response had no access_token");
     this.token = { value: json.access_token, expiresAt: this.now() + (json.expires_in ?? 300) * 1000 };
@@ -137,4 +138,31 @@ export class EvpClient {
     }
     return results;
   }
+}
+
+/**
+ * The login server's own reason (OAuth2 "error" / "error_description", e.g. "invalid_client:
+ * Invalid client credentials"). Only those two fields are read, and shortened, so nothing
+ * else from the response is ever shown.
+ */
+async function tokenErrorReason(res: Response): Promise<string> {
+  try {
+    const body = (await res.json()) as { error?: unknown; error_description?: unknown };
+    const parts = [body.error, body.error_description].filter((x): x is string => typeof x === "string" && x.length > 0);
+    return parts.length ? `: ${parts.join(": ").slice(0, 160)}` : "";
+  } catch {
+    return "";
+  }
+}
+
+/** Safe facts about the configured credentials, to spot typos without revealing them. */
+export function describeCredentials(env: NodeJS.ProcessEnv = process.env): string[] {
+  const id = env.PORT_HOUSTON_EVP_CLIENT_ID ?? "";
+  const secret = env.PORT_HOUSTON_EVP_CLIENT_SECRET ?? "";
+  const spaces = (v: string) => (v !== v.trim() ? " (had spaces around it; ignored)" : "");
+  return [
+    `   Client ID: ${id.trim() || "(missing)"}${spaces(id)}`,
+    `   Client secret: ${secret.trim().length} characters${spaces(secret)}`,
+    `   Login address: ${env.PORT_HOUSTON_EVP_TOKEN_URL?.trim() || "(missing)"}`,
+  ];
 }

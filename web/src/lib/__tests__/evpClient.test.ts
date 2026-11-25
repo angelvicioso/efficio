@@ -82,3 +82,39 @@ describe("EvpClient", () => {
     expect(() => EvpClient.fromEnv({} as NodeJS.ProcessEnv)).toThrow(EvpError);
   });
 });
+
+describe("sign-in diagnostics", () => {
+  it("includes the login server's reason on failure", async () => {
+    const fetchFn = vi.fn(async () =>
+      new Response(JSON.stringify({ error: "invalid_client", error_description: "Invalid client or Invalid client credentials" }), { status: 401 }),
+    );
+    const client = new EvpClient(config, fetchFn as unknown as typeof fetch);
+    await expect(client.getToken()).rejects.toThrow("Token request failed (401): invalid_client: Invalid client or Invalid client credentials");
+  });
+
+  it("trims stray spaces from settings", async () => {
+    let body = "";
+    const fetchFn = vi.fn(async (_u: string | URL, init?: RequestInit) => {
+      body = String(init?.body);
+      return json({ access_token: "t", expires_in: 100 });
+    });
+    const env = {
+      PORT_HOUSTON_EVP_BASE_URL: " https://evp.example/v3/evp ",
+      PORT_HOUSTON_EVP_TOKEN_URL: "https://auth.example/token",
+      PORT_HOUSTON_EVP_CLIENT_ID: "pha-efficio ",
+      PORT_HOUSTON_EVP_CLIENT_SECRET: " s3cret\n",
+      PORT_HOUSTON_EVP_OPERATOR: "POHA",
+    } as unknown as NodeJS.ProcessEnv;
+    const c = EvpClient.fromEnv(env) as unknown as { config: object; fetchFn: unknown };
+    (c as { fetchFn: unknown }).fetchFn = fetchFn;
+    await (c as unknown as EvpClient).getToken();
+    expect(body).toContain("client_id=pha-efficio&client_secret=s3cret&");
+  });
+
+  it("describes credentials without revealing the secret", async () => {
+    const { describeCredentials } = await import("../ports/navis/evpClient");
+    const out = describeCredentials({ PORT_HOUSTON_EVP_CLIENT_ID: "pha-efficio", PORT_HOUSTON_EVP_CLIENT_SECRET: " abcdefgh ", PORT_HOUSTON_EVP_TOKEN_URL: "https://auth.example/token" } as unknown as NodeJS.ProcessEnv).join("\n");
+    expect(out).toContain("Client secret: 8 characters (had spaces around it; ignored)");
+    expect(out).not.toContain("abcdefgh");
+  });
+});

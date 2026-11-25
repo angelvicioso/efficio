@@ -1,4 +1,4 @@
-import { EvpClient } from "./evpClient";
+import { describeCredentials, EvpClient } from "./evpClient";
 
 /**
  * Port Houston connection check (spike S-013), shared by the super admin "Test connection"
@@ -53,11 +53,20 @@ export async function runPortHoustonCheck(client?: EvpClient): Promise<string[]>
     return [`✗ ${e instanceof Error ? e.message : String(e)}`];
   }
   out.push("1) Signing in…");
+  if (!client) out.push(...describeCredentials());
   try {
     await c.getToken();
     out.push("   ✓ Signed in to Port Houston (token received; not shown)", "");
   } catch (e) {
     out.push(`   ✗ ${e instanceof Error ? e.message : String(e)}`);
+    if (e instanceof Error && /\(401\)|\(400\)/.test(e.message)) {
+      out.push(
+        "",
+        "   The login server rejected the client ID or secret. Check the secret character by character",
+        "   (l / I / 1 and O / 0 look alike), then ask the Port Houston contact whether the credentials",
+        "   are still active.",
+      );
+    }
     return out;
   }
   for (const check of CHECKS) {
