@@ -1,6 +1,6 @@
 # Open Questions
 
-Questions for the team. Each question has an **Owner** (see [Team](00-team.md)): Eduardo (technical), Orlando (domain/operations), Javier (business/finance), or All. Answer inline (or in chat) and we'll move them to **Answered** with a link to any resulting decision.
+Questions for the team. Each question has an **Owner** (see [Team](00-team.md)): Eduardo (CTO), Orlando (CEO), Javier (CFO & COO), or All. Answer inline (or in chat) and we'll move them to **Answered** with a link to any resulting decision.
 
 **Priority:** 🔴 blocks the first story · 🟠 needed soon · 🟢 can wait
 
@@ -19,7 +19,7 @@ Questions for the team. Each question has an **Owner** (see [Team](00-team.md)):
 | Q-009 | 🟢 | Eduardo | **Platform & tech preferences?** Web app vs. mobile; any preferred stack, cloud, or team skills? | We'll default to a web app with a simple modern stack unless you say otherwise. | |
 | Q-010 | 🟢 | Eduardo | **Single exporter or multiple companies (multi-tenant) in the POC?** Multiple users per exporter? | Affects auth and data model early. | |
 | Q-011 | 🟢 | All | **Working product name?** "Vicious" is the repo name — is that the brand? | Branding in the UI/docs. | |
-| Q-013 | 🟢 | All | **Who has final say on product decisions** (or how do we break ties)? | Fills in the decision log's "who decided" entries. Names and titles are answered (see [Team](00-team.md)). | |
+| Q-013 | 🟢 | All | **Who has final say on product decisions** (or how do we break ties)? Default would be the CEO, Orlando. | Fills in the decision log's "who decided" entries. Names and titles are answered (see [Team](00-team.md)). | |
 | Q-014 | 🟠 | All | **How much time can each person give per week**, and is anyone else besides Javier part time? | Sets a realistic POC timeline and decides who takes on time-heavy work like outreach. | |
 | Q-015 | 🟢 | Javier | **Does Javier's firm or network include industrial/warehouse properties, owners or operators?** | A possible path to the warehouse side of the platform (E-04). Also check for conflicts with his employer. | |
 
