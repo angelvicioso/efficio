@@ -3,7 +3,7 @@
   "image": "mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm",
   "hostRequirements": { "cpus": 2 },
   "postCreateCommand": "cd web && npm ci && npm run demo:seed",
-  "postAttachCommand": { "app": "cd web && npm run dev" },
+  "postAttachCommand": { "app": "cd web && git log -1 --format='[efficio] running version %h from %cd' && npm run dev" },
   "forwardPorts": [3000],
   "portsAttributes": {
     "3000": { "label": "Efficio", "onAutoForward": "openBrowser" }
