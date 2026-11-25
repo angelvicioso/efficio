@@ -11,10 +11,12 @@ export function setupTokenRequired(env: NodeJS.ProcessEnv = process.env): boolea
 }
 
 export function setupTokenValid(given: string | null | undefined, env: NodeJS.ProcessEnv = process.env): boolean {
-  const expected = env.EFFICIO_SETUP_TOKEN;
+  const expected = env.EFFICIO_SETUP_TOKEN?.trim();
   if (!expected) return true;
   if (!given) return false;
-  const a = Buffer.from(given);
+  // Generated tokens can contain "+", which a web address turns into a space when read
+  // (…?token=ab+cd arrives as "ab cd"). Put it back, and ignore stray spaces from copy-paste.
+  const a = Buffer.from(given.trim().replace(/ /g, "+"));
   const b = Buffer.from(expected);
   return a.length === b.length && timingSafeEqual(a, b);
 }

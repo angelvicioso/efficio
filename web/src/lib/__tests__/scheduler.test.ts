@@ -70,6 +70,11 @@ describe("hosting helpers", () => {
     expect(setupTokenValid(undefined, set)).toBe(false);
     expect(setupTokenValid("wrong", set)).toBe(false);
     expect(setupTokenValid("s3cret-token", set)).toBe(true);
+    // A "+" in the token arrives as a space when it's in the address; copy-paste may add spaces around it
+    const plus = { EFFICIO_SETUP_TOKEN: "ab+cd/ef=" } as unknown as NodeJS.ProcessEnv;
+    expect(setupTokenValid("ab cd/ef=", plus)).toBe(true);
+    expect(setupTokenValid(" ab+cd/ef= ", plus)).toBe(true);
+    expect(setupTokenValid("ab cd/eX=", plus)).toBe(false);
   });
 
   it("public address: explicit setting, then Render, then Codespaces", async () => {
