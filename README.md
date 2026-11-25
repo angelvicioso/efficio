@@ -1,4 +1,6 @@
-# Vicious — Logistics Collaboration Platform (POC)
+# Efficio — Logistics Collaboration Platform (POC)
+
+_Repo name: `vicious`. Product name: **Efficio**._
 
 A platform that brings together the entities involved in moving export cargo — **exporters, ocean carriers, trucking carriers, ports/terminals, and warehouses** — around a shared view of each booking.
 

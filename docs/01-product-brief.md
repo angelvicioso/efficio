@@ -1,4 +1,4 @@
-# Product Brief
+# Product Brief: Efficio
 
 _Last updated: 2026-11-25 · Status: Draft — pending answers in [Open questions](02-open-questions.md)_
 
