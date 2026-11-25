@@ -20,11 +20,12 @@ The repository contains a **Render Blueprint** (`render.yaml`) that describes th
    - Open `https://<your-address>/setup?token=<the token>` and create your account. Use a **strong, new password**, not the demo password.
    - Without the token, `/setup` only says "Setup link required", so nobody else can claim the new server first. Once an account exists, setup is closed for good.
 7. **Invite Orlando and Javier** as super admins: **All organizations → Invite a super admin**, then send them the links.
+8. **Optional: add sample data.** On **All organizations**, click **Add sample data**. It creates Acme Exports, Globex Shipping and Maersk Line (carrier) with simulated bookings and containers, and **no logins**: you open them as a super admin, or invite people into them. **Remove sample data** deletes them again without touching real companies (D-026).
 
 ## Day to day
 - **Deploys are automatic.** Every push to `claude/logistics-platform-poc-x95492` redeploys the app. Expect a few seconds of downtime per deploy, because the disk can only attach to one server at a time.
 - **The data is simulated** (`PORT_ADAPTER=mock`). Live Port Houston data needs the booking fields (Q-021) and confirmation that Efficio may show the data to exporters (R-008).
-- **Don't run `npm run demo:seed` on Render.** Its password is published in the README.
+- **Demo logins never exist on the hosted copy.** `npm run demo:seed` (whose password is in the README) refuses to run on Render. Use **Add sample data** (step 8) instead.
 - **Backups (D-022):** Render takes daily snapshots of the disk. Check the disk's settings in Render to confirm and see how long they're kept. Database upgrades also write a safety copy next to the data file first.
 
 ## Changing settings

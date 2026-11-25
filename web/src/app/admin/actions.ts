@@ -79,3 +79,29 @@ export async function unlockSuperAdminAction(formData: FormData): Promise<void> 
   if (target?.isSuperAdmin) accountService().unlock(target.email);
   revalidatePath("/admin");
 }
+
+/** Hosted-safe sample data (D-026): sample companies and simulated bookings, no logins. */
+export async function addSampleDataAction(_prev: FormState, _formData: FormData): Promise<FormState> {
+  await requireSuperAdmin();
+  const { addSampleData, SampleDataError } = await import("@/lib/demo/sample");
+  const { bookingService } = await import("@/lib/service");
+  const { getPortAdapter } = await import("@/lib/ports");
+  try {
+    await addSampleData(accountService(), bookingService(), getPortAdapter().source);
+  } catch (e) {
+    if (e instanceof SampleDataError) return { error: e.message };
+    return fail(e);
+  }
+  revalidatePath("/admin");
+  return { message: "Sample companies added. Open one below to explore, or invite someone into it." };
+}
+
+export async function removeSampleDataAction(_prev: FormState, _formData: FormData): Promise<FormState> {
+  await requireSuperAdmin();
+  const { removeSampleData } = await import("@/lib/demo/sample");
+  const { bookingService } = await import("@/lib/service");
+  const { getDb } = await import("@/lib/db");
+  const n = removeSampleData(getDb(), accountService(), bookingService());
+  revalidatePath("/admin");
+  return { message: n ? `Removed ${n} sample compan${n === 1 ? "y" : "ies"} and their bookings.` : "No sample data to remove." };
+}

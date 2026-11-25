@@ -11,7 +11,11 @@ import {
   revokeSuperAdminInviteAction,
   setSuperAdminDisabledAction,
   unlockSuperAdminAction,
+  addSampleDataAction,
+  removeSampleDataAction,
 } from "./actions";
+import { hasSampleData } from "@/lib/demo/sample";
+import { getPortAdapter } from "@/lib/ports";
 
 export const dynamic = "force-dynamic";
 
@@ -108,6 +112,22 @@ export default async function AdminPage() {
           </p>
         </ActionForm>
       </section>
+
+      {getPortAdapter().source === "mock" && (
+        <section className="card">
+          <h2>Sample data</h2>
+          <p className="muted small">
+            Adds three sample companies (Acme Exports, Globex Shipping and Maersk Line as a carrier) with simulated bookings and
+            containers, so there’s something to explore. It creates <strong>no logins</strong>: open the companies from the list
+            above, or invite real people into them. Remove it any time; real companies are never touched.
+          </p>
+          {hasSampleData(accounts) ? (
+            <ActionForm action={removeSampleDataAction} submitLabel="Remove sample data" variant="danger" />
+          ) : (
+            <ActionForm action={addSampleDataAction} submitLabel="Add sample data" variant="secondary" />
+          )}
+        </section>
+      )}
 
       <section className="card">
         <h2>Super admins</h2>

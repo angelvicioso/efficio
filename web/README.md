@@ -56,6 +56,8 @@ Other commands: `npm test` (unit tests), `npm run typecheck`, `npm run build && 
 > **Upgrading?** From the logins version, the database upgrades itself on startup: accounts are kept and simulated bookings are reset. From the pre-login version, delete `web/.data/efficio.db`.
 
 ## Demo data
+**On a hosted server** (Render), use **Add sample data** on the super admin page instead: same companies and bookings, **no logins** (D-026). The command below refuses to run there.
+
 `npm run demo:seed` fills an **empty** database with demo organizations, logins and simulated bookings (Codespaces does this automatically):
 
 | Login | Who | What you'll see |

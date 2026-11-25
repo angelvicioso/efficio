@@ -315,6 +315,17 @@ export class BookingService {
     if (this.access(viewer, bookingId)?.via !== "carrier") throw new BookingError("Only the booking's carrier can do this.");
   }
 
+  /** Removes every booking nobody follows any more (e.g. after removing sample data). */
+  deleteAllUnfollowed(): void {
+    this.db
+      .prepare(
+        `DELETE FROM bookings
+         WHERE NOT EXISTS (SELECT 1 FROM booking_parties p WHERE p.booking_id = bookings.id)
+           AND NOT EXISTS (SELECT 1 FROM organizations o WHERE o.carrier_code = bookings.carrier_code)`,
+      )
+      .run();
+  }
+
   private deleteIfUnfollowed(id: number): void {
     this.db
       .prepare(
