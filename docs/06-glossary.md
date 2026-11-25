@@ -26,3 +26,5 @@
 | **Organization** | One customer company on Efficio (e.g. an exporter), with its own bookings and users. Identified by its email domains. |
 | **Super admin** | An Efficio team member who can see and manage every organization. |
 | **Org admin / member** | A customer's users. Admins manage their team; members track bookings. |
+| **Party** | An organization involved in a booking, in a role: exporter, carrier, trucker, terminal, warehouse or forwarder (P-001). |
+| **Freight forwarder / NVOCC** | A company that books space with ocean carriers on behalf of exporters, sometimes under its own (house) booking number. |

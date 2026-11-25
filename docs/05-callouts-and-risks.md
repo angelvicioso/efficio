@@ -17,6 +17,7 @@
 | R-013 | **Super admins can see every customer's data.** | Customers will ask who at Efficio can see their bookings. | Keep the super admin list to the founding team; show a banner whenever a super admin is inside a customer's workspace (built); add an activity log (S-009). | Open |
 | R-014 | **No limit on login attempts yet.** | Password guessing once the app is public. | Add rate limiting and lockout before a public launch. | Open |
 | R-015 | **No email yet**, so invite links are passed by hand and there is no "forgot password". | Links could be forwarded; users who forget a password need an admin. | Links are single-use and expire in 7 days; build S-008. | Open |
+| R-016 | **Claimed bookings.** Anyone can type in a booking number, including one that isn't theirs. | Once bookings hold data shared by other parties, someone could see another company's shipment. | P-001: "claimed" links see only port data; "verified" links (confirmed by the carrier) see shared data. | Open |
 | R-005 | **"Real-time" expectations.** Terminal data itself may only update periodically; rate limits apply. | Users may expect instant updates. | Define refresh target (Q-006); show "last updated" on every screen. | Open |
 
 ## Assumptions (to validate)

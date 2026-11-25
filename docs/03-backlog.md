@@ -8,7 +8,7 @@ Stories are **Draft** until their blocking questions are answered and acceptance
 | E-01 | Exporter booking tracking (port visibility) | Draft |
 | E-02 | Port/terminal data integration | Draft |
 | E-03 | Change detection & alerts | Draft |
-| E-04 | Multi-party collaboration (carriers, truckers, warehouses) | Future |
+| E-04 | Multi-party collaboration (carriers, truckers, warehouses). Data model proposed in [P-001](proposals/P-001-shared-bookings.md). | Future; model proposed |
 
 ## Stories
 

@@ -25,6 +25,7 @@ We run this like an early-stage startup: ideas become **stories**, unknowns beco
 | [Glossary](docs/06-glossary.md) | Shipping/logistics terms used in this project | — |
 | [Interviews](docs/interviews/) | Interview guides and notes with the team and customers | — |
 | [Integrations](docs/integrations/) | Technical notes for each data source (no secrets) | — |
+| [Proposals](docs/proposals/) | Design proposals awaiting a team decision | `P-
 
 ### Status vocabulary
 - **Questions:** `Open` → `Answered` (answer recorded + linked decision if any)
