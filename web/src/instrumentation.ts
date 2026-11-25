@@ -1,0 +1,22 @@
+/**
+ * Next.js calls register() once when the server starts. We use it to start the
+ * Port Houston refresh schedule (D-017). Set REFRESH_INTERVAL_MINUTES=0 to turn it off.
+ */
+export async function register() {
+  if (process.env.NEXT_RUNTIME !== "nodejs") return;
+  if (process.env.NEXT_PHASE === "phase-production-build") return;
+
+  const { refreshIntervalMinutes, startScheduler } = await import("./lib/scheduler");
+  const minutes = refreshIntervalMinutes();
+  if (minutes === 0) {
+    console.log("[refresh] automatic refresh is off (REFRESH_INTERVAL_MINUTES=0)");
+    return;
+  }
+  const { bookingService } = await import("./lib/service");
+  startScheduler(minutes * 60_000, async () => {
+    const started = Date.now();
+    const { refreshed, skipped } = await bookingService().refreshDue();
+    console.log(`[refresh] ${refreshed} booking(s) refreshed, ${skipped} finished skipped, in ${Date.now() - started} ms`);
+  });
+  console.log(`[refresh] refreshing tracked bookings every ${minutes} minute(s)`);
+}

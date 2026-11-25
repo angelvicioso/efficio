@@ -12,6 +12,7 @@ import { AccessBadge } from "../../AccessBadge";
 import { carrierName } from "@/lib/domain/carriers";
 import { AddBookingForm } from "./AddBookingForm";
 import { refreshAllAction } from "./actions";
+import { refreshIntervalMinutes } from "@/lib/scheduler";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,7 @@ export default async function OrgBookingsPage({ params }: { params: Promise<{ or
   const { org } = await requireOrgAccess(slug);
   const bookings = bookingService().list(org);
   const isCarrier = org.type === "ocean_carrier";
+  const refreshMinutes = refreshIntervalMinutes();
   const isMock = getPortAdapter().source === "mock";
 
   return (
@@ -54,7 +56,14 @@ export default async function OrgBookingsPage({ params }: { params: Promise<{ or
       ) : (
         <section>
           <div className="list-header">
-            <h2>Tracked bookings ({bookings.length})</h2>
+            <div>
+              <h2>Tracked bookings ({bookings.length})</h2>
+              <p className="muted small no-margin">
+                {refreshMinutes > 0
+                  ? `Updates automatically every ${refreshMinutes} minute${refreshMinutes === 1 ? "" : "s"}.`
+                  : "Automatic updates are off."}
+              </p>
+            </div>
             <form action={refreshAllAction}>
               <input type="hidden" name="org" value={org.slug} />
               <button type="submit" className="secondary">

@@ -3,7 +3,8 @@ import { timingSafeEqual } from "node:crypto";
 import { bookingService } from "@/lib/service";
 
 /**
- * Scheduled refresh (S-012) for every organization's bookings: a cron job or scheduler POSTs here.
+ * Manual trigger for the scheduled refresh (S-012, D-017). The app already refreshes on its own
+ * every REFRESH_INTERVAL_MINUTES; this endpoint is for an external scheduler if the app runs serverless.
  * Set REFRESH_TOKEN and send it as "Authorization: Bearer <token>".
  */
 export async function POST(request: Request) {
@@ -16,6 +17,5 @@ export async function POST(request: Request) {
   if (given.length !== want.length || !timingSafeEqual(given, want)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const refreshed = await bookingService().refreshAll();
-  return NextResponse.json({ refreshed });
+  return NextResponse.json(await bookingService().refreshDue());
 }

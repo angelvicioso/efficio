@@ -71,8 +71,9 @@ export class MockPortHoustonAdapter implements PortAdapter {
       t = Math.floor(fetchedAt.getTime() / HOUR) * HOUR;
       this.anchors.set(key, t);
     }
-    // HOU1005 demonstrates change detection (S-020): the cutoff moves 12h earlier per lookup.
-    const drift = key === "HOU1005" ? (count - 1) * 12 * HOUR : 0;
+    // HOU1005 demonstrates change detection (S-020): the cutoff moves 12h earlier on each of the
+    // next two lookups, then settles (so frequent automatic refreshes don't push it into the past).
+    const drift = key === "HOU1005" ? Math.min(count - 1, 2) * 12 * HOUR : 0;
     const anchor = t;
     const at = (offset: number) => new Date(anchor + offset).toISOString();
     const cargoCutoff = at(scenario.cargoCutoffIn - drift);

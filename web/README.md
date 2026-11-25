@@ -60,7 +60,8 @@ Copy `../.env.example` to `web/.env.local` and fill it in. Never commit it.
 | `PORT_ADAPTER` | `mock` (default) or `navis` for live Port Houston data |
 | `PORT_HOUSTON_EVP_*` | Navis N4 EVP connection (see `docs/integrations/port-houston.md`) |
 | `EFFICIO_DB_PATH` | SQLite file location (default `web/.data/efficio.db`) |
-| `REFRESH_TOKEN` | Secret for `POST /api/refresh-all`, used by a scheduler to refresh every booking |
+| `REFRESH_INTERVAL_MINUTES` | How often the server re-checks every followed booking (default `5`; `0` turns it off). Vessels that sailed over a day ago are skipped (D-017) |
+| `REFRESH_TOKEN` | Secret for `POST /api/refresh-all`, to trigger a refresh from outside (only needed on hosting without a long-running server) |
 | `EFFICIO_BASE_URL` | Public URL used in invite links (default: taken from the request) |
 | `EFFICIO_INSECURE_COOKIES` | Set to `1` only to test a production build over plain http (not on localhost) |
 
@@ -82,5 +83,4 @@ src/app/login, setup, invite/[token]   Sign-in, first-run setup, accepting an in
 - **Email** (invites, password reset). Until then a super admin resets a password by disabling the account and sending a new invite.
 - **Login rate limiting** (R-014). Add it before the app is on the public internet.
 - **Live Port Houston lookups.** Needs the N4 booking and vessel visit endpoints (Q-021, S-013).
-- **Automatic refresh schedule.** The endpoint exists; a scheduler still needs to call it (Q-006).
 - **Alerts (S-021).**

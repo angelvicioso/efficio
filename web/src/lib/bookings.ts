@@ -85,6 +85,9 @@ export class BookingError extends Error {
   }
 }
 
+/** Bookings stop auto-refreshing this long after their vessel's departure. */
+const FINISHED_AFTER_MS = 24 * 60 * 60 * 1000;
+
 /** Booking numbers: letters, digits and dashes, 4–30 characters (Q-023). */
 const BOOKING_NUMBER = /^[A-Z0-9-]{4,30}$/;
 
@@ -224,6 +227,34 @@ export class BookingService {
     ) as { id: number }[];
     for (const r of rows) await this.fetch(r.id);
     return rows.length;
+  }
+
+  /**
+   * Scheduled refresh (D-017): every followed booking, except ones whose vessel sailed more
+   * than a day ago. Those won't change in ways exporters act on, so we stop spending API calls.
+   */
+  async refreshDue(now: Date = new Date()): Promise<{ refreshed: number; skipped: number }> {
+    const rows = this.db
+      .prepare(
+        `SELECT b.id,
+           (SELECT s.data FROM snapshots s WHERE s.booking_id = b.id AND s.data IS NOT NULL ORDER BY s.id DESC LIMIT 1) AS data
+         FROM bookings b
+         WHERE EXISTS (SELECT 1 FROM booking_parties p WHERE p.booking_id = b.id)
+            OR EXISTS (SELECT 1 FROM organizations o WHERE o.carrier_code = b.carrier_code)`,
+      )
+      .all() as { id: number; data: string | null }[];
+    let refreshed = 0;
+    let skipped = 0;
+    for (const r of rows) {
+      const etd = r.data ? (JSON.parse(r.data) as PortBookingSnapshot).vesselVisit?.etd : null;
+      if (etd && Date.parse(etd) < now.getTime() - FINISHED_AFTER_MS) {
+        skipped++;
+        continue;
+      }
+      await this.fetch(r.id);
+      refreshed++;
+    }
+    return { refreshed, skipped };
   }
 
   /** The viewer stops following a booking. The shared record goes once nobody follows it. */

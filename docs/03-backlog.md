@@ -48,7 +48,7 @@ Stories are **Draft** until their blocking questions are answered and acceptance
 | S-010 | As the **platform**, I want a **port adapter interface** so each terminal (or aggregator) can be plugged in without changing the app. | — | **Done** |
 | S-011 | As the **platform**, I want a **Port Houston adapter** using the Navis N4 EVP API (token handling, booking and vessel visit lookup), starting with a mock built from the documented response format. See [integration notes](integrations/port-houston.md). | Q-021 | **In progress**: mock done; token handling and paged queries done; booking/vessel visit mapping waits on S-013 |
 | S-013 | **Spike (Eduardo):** with the Navis N4 EVP credentials, get a token and find the booking and vessel visit endpoints; confirm the fields for the receiving window and cutoffs, the inputs (carrier code?), coverage (Bayport/Barbours Cut), and rate limits. Checklist in [integration notes](integrations/port-houston.md). | Q-021 | Draft |
-| S-012 | As the **platform**, I want to **refresh booking data on a schedule** and store each snapshot, so we have history. | Q-006 | **In progress**: snapshots, manual refresh and refresh API done; scheduler pending Q-006 |
+| S-012 | As the **platform**, I want to **refresh booking data on a schedule** and store each snapshot, so we have history. | — | **Done**: refreshes every 5 minutes (D-017), skips sailed vessels, manual refresh too |
 
 ### E-03 · Change detection & alerts
 | ID | Story | Blocked by | Status |
