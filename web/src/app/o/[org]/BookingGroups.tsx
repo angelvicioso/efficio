@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { TrackedBooking } from "@/lib/bookings";
-import { containerProgress, remainingToDeliver, type ContainerProgress } from "@/lib/domain/containers";
+import { containerProgress, remainingToDeliver, remainingToPickUp, type ContainerProgress } from "@/lib/domain/containers";
 import { carrierName } from "@/lib/domain/carriers";
 import { cargoCutoff, receivingStatus, type ReceivingState } from "@/lib/domain/status";
 import { CONTAINER_STAGE_LABELS, sizeTypeLabel } from "@/lib/domain/types";
@@ -20,7 +20,7 @@ const STATE_WORDS: [ReceivingState, string][] = [
   ["NOT_ON_FILE", "not at terminal yet"],
 ];
 
-const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+const plural = (n: number, word: string) => `${n} ${n === 1 ? word : word === "empty" ? "empties" : `${word}s`}`;
 
 export function stateSummary(counts: GroupSummary["stateCounts"]): string {
   return STATE_WORDS.filter(([s]) => counts[s])
@@ -33,11 +33,16 @@ export function ContainerCounts({ p, compact = false }: { p: ContainerProgress; 
   if (p.booked === 0) return <span className="muted small">No container data</span>;
   const pct = (n: number) => `${(n / p.booked) * 100}%`;
   const left = remainingToDeliver(p);
+  const toPickUp = remainingToPickUp(p);
   return (
     <div className={compact ? "counts counts-compact" : "counts"}>
       <div className="counts-text">
         <strong>{plural(p.booked, "container")}</strong>
-        <span className="muted"> · {p.pickedUp} picked up · {p.atTerminal} at terminal · {p.loaded} on vessel</span>
+        <span className="muted">
+          {" "}
+          · {p.pickedUp} picked up{toPickUp > 0 && <strong className="to-pick-up"> ({toPickUp} not yet)</strong>} · {p.atTerminal} at terminal ·{" "}
+          {p.loaded} on vessel
+        </span>
       </div>
       <div
         className="bar"
@@ -48,7 +53,13 @@ export function ContainerCounts({ p, compact = false }: { p: ContainerProgress; 
         <span className="bar-in" style={{ width: pct(p.atTerminal) }} />
         <span className="bar-loaded" style={{ width: pct(p.loaded) }} />
       </div>
-      {!compact && left > 0 && <div className="small counts-left">{plural(left, "container")} still to deliver to the terminal</div>}
+      {!compact && (toPickUp > 0 || left > 0) && (
+        <div className="small counts-left">
+          {[toPickUp > 0 && `${plural(toPickUp, "empty")} still to pick up`, left > 0 && `${plural(left, "container")} still to deliver to the terminal`]
+            .filter(Boolean)
+            .join(" · ")}
+        </div>
+      )}
     </div>
   );
 }
@@ -169,7 +180,7 @@ export function ContainerTable({ snap }: { snap: TrackedBooking["latest"] extend
           {waiting > 0 && (
             <tr>
               <td colSpan={6} className="muted">
-                {plural(waiting, "more container")} not picked up yet
+                {plural(waiting, "more container")} not picked up yet (empties still to collect)
               </td>
             </tr>
           )}

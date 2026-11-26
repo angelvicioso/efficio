@@ -118,7 +118,7 @@ export async function runBookingCheck(carrierCode: string, bookingNumber: string
       `  Cargo cutoff: ${t(s.cutoffs.find((c) => c.kind === "cargo")?.at)}`,
       `  Other cutoffs: ${s.cutoffs.filter((c) => c.kind !== "cargo").map((c) => `${c.kind} ${t(c.at)}`).join(", ") || "—"}`,
       `  Booked: ${(s.equipment ?? []).map((e) => `${e.quantity} × ${sizeTypeLabel(e.sizeType)} (${e.sizeType})`).join(", ") || "—"}`,
-      `  Containers: ${p.booked} booked · ${p.pickedUp} picked up · ${p.atTerminal} at terminal · ${p.loaded} on vessel`,
+      `  Containers: ${p.booked} booked · ${p.pickedUp} picked up (${p.booked - p.pickedUp} not yet) · ${p.atTerminal} at terminal · ${p.loaded} on vessel`,
       ...(s.containers ?? []).map(
         (c) => `    ${c.number}  ${sizeTypeLabel(c.sizeType) || "?"}  ${c.stage}  out ${t(c.emptyPickedUpAt)}  in ${t(c.fullGateInAt)}  loaded ${t(c.loadedAt)}`,
       ),

@@ -35,6 +35,11 @@ export function addProgress(a: ContainerProgress, b: ContainerProgress): Contain
 
 export const NO_PROGRESS: ContainerProgress = { booked: 0, pickedUp: 0, atTerminal: 0, loaded: 0 };
 
+/** Containers booked but not yet picked up empty. */
+export function remainingToPickUp(p: ContainerProgress): number {
+  return Math.max(0, p.booked - p.pickedUp);
+}
+
 /** Containers still to be delivered to the terminal. */
 export function remainingToDeliver(p: ContainerProgress): number {
   return Math.max(0, p.booked - p.atTerminal);

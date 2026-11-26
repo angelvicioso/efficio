@@ -103,9 +103,27 @@ describe("Test a booking report", () => {
     expect(report).toMatch(/Booking: .*1 with this carrier ✓/);
     expect(report).toContain("Vessel visit found ✓");
     expect(report).toContain("Vessel: MAERSK HOUSTON / 247E (visit MHOU)");
-    expect(report).toContain("Containers: 4 booked · 3 picked up · 2 at terminal · 1 on vessel");
+    expect(report).toContain("Containers: 4 booked · 3 picked up (1 not yet) · 2 at terminal · 1 on vessel");
     expect(report).not.toMatch(/COMPETITOR|OTHER00001/);
     expect(report).toContain("Cargo cutoff: Sat, Nov 28, 5:00 PM"); // 23:00 UTC shown in Houston time
     expect(report).toContain("4 × 40' high cube (45G1)");
+  });
+});
+
+describe("booked quantity", () => {
+  it("reads per-type quantities, and falls back to the booking total", async () => {
+    const { equipmentOf } = await import("../ports/navis/adapter");
+    expect(equipmentOf({ quantity: 4, items: [{ qty: 4, sampleEquipTypeId: "45G1" }] })).toEqual([{ sizeType: "45G1", quantity: 4 }]);
+    expect(equipmentOf({ quantity: 3, items: [] })).toEqual([{ sizeType: "unspecified", quantity: 3 }]);
+    expect(equipmentOf({ quantity: 5, items: [{ qty: 3, sampleEquipTypeId: "2210" }] })).toEqual([
+      { sizeType: "2210", quantity: 3 },
+      { sizeType: "other", quantity: 2 },
+    ]);
+  });
+
+  it("reports how many are not picked up yet", async () => {
+    const { remainingToPickUp } = await import("../domain/containers");
+    expect(remainingToPickUp({ booked: 6, pickedUp: 3, atTerminal: 1, loaded: 0 })).toBe(3);
+    expect(remainingToPickUp({ booked: 1, pickedUp: 1, atTerminal: 0, loaded: 0 })).toBe(0);
   });
 });

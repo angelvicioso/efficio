@@ -136,13 +136,19 @@ export function buildContainers(units: N4Unit[], gates: N4GateTransaction[]): Co
   return [...byId.values()].sort((a, b) => a.number.localeCompare(b.number));
 }
 
-function equipmentOf(b: N4Booking): EquipmentLine[] {
-  return (b.items ?? [])
+/** What was booked: per container type from items[], or the booking's overall quantity if items are missing. */
+export function equipmentOf(b: N4Booking): EquipmentLine[] {
+  const lines = (b.items ?? [])
     .filter((i) => (i.qty ?? 0) > 0)
     .map((i) => ({
       sizeType: i.sampleEquipTypeId?.trim() || [i.eqSize, i.eqHeight, i.eqIsoGroup].filter(Boolean).join(" "),
       quantity: i.qty ?? 0,
     }));
+  const itemTotal = lines.reduce((n, l) => n + l.quantity, 0);
+  const total = b.quantity ?? 0;
+  // Never under-count: if the booking's total is higher than its listed items, show the difference.
+  if (total > itemTotal) lines.push({ sizeType: itemTotal ? "other" : "unspecified", quantity: total - itemTotal });
+  return lines;
 }
 
 /** A trimmed copy of what the port sent: booking and vessel facts only, no other parties' details. */
