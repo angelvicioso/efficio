@@ -22,8 +22,9 @@ import { getPortAdapter } from "@/lib/ports";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminPage() {
+export default async function AdminPage({ searchParams }: { searchParams: Promise<{ sampleRemoved?: string }> }) {
   const me = await requireSuperAdmin();
+  const { sampleRemoved } = await searchParams;
   const accounts = accountService();
   const orgs = accounts.listOrganizations();
   const superAdmins = accounts.listSuperAdmins();
@@ -31,6 +32,11 @@ export default async function AdminPage() {
 
   return (
     <>
+      {sampleRemoved !== undefined && (
+        <p className="callout" role="status">
+          {Number(sampleRemoved) > 0 ? "Sample data removed: the sample companies and their bookings are gone." : "There was no sample data to remove."}
+        </p>
+      )}
       <section className="intro">
         <h1>All organizations</h1>
         <p className="muted">Every customer has its own workspace. Open one to see its bookings and manage its team.</p>

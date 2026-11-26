@@ -103,7 +103,8 @@ export async function removeSampleDataAction(_prev: FormState, _formData: FormDa
   const { getDb } = await import("@/lib/db");
   const n = removeSampleData(getDb(), accountService(), bookingService());
   revalidatePath("/admin");
-  return { message: n ? `Removed ${n} sample compan${n === 1 ? "y" : "ies"} and their bookings.` : "No sample data to remove." };
+  // In live mode the Sample data section disappears once it's empty, so confirm at the top of the page.
+  redirect(`/admin?sampleRemoved=${n}`);
 }
 
 /** Super admin diagnostic: one call to each Port Houston endpoint, masked output (S-013). */
