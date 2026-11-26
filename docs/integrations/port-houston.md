@@ -91,7 +91,7 @@ All five endpoints answered (100 records per page). **Every list contains all co
 | Booked equipment | booking `items[]`: `qty`, `sampleEquipTypeId` (e.g. 45G1) | |
 | Empties picked up / loads received (counts) | booking `tally` / `tallyReceive` | The terminal's own running counts |
 | Container list | `inventory/units` with `departOrderNbr` = booking: `unitId`, `freightKind`, `transitState` (S30–S50 at terminal, S60+ loaded), `timestamps.timeIn` / `timeOfLoading` | |
-| Gate moves | `road/gatetransactions` with `eqoNbr` = booking: `subType` DM = empty out, RE = full in; `ctrId`, `handled` | Subtype codes to confirm with a real booking |
+| Gate moves | `road/gatetransactions` with `eqoNbr` = booking: `subType` DM = empty out, RE = full in; `ctrId`, `handled` | **DM confirmed** 2026-11-26; RE still to confirm with a delivered container |
 
 ## Going live: checklist
 | # | Step | Owner | Status |
@@ -100,7 +100,7 @@ All five endpoints answered (100 records per page). **Every list contains all co
 | 2 | **First real call**: add the `PORT_HOUSTON_EVP_*` settings in Render (keep `PORT_ADAPTER=mock`), then press **Test Port Houston connection** on the super admin page (works on a phone). Or on a laptop: credentials in `web/.env.local`, then `npm run port-houston:check`. Either way the report shows field names and value *formats* only, never real values, so it's safe to share | Eduardo | **Done 2026-11-25** (all five endpoints answered). Earlier: **blocked:** Render reached Port Houston, but sign-in returned `401 unauthorized_client: Invalid client or Invalid client credentials`. Client ID, secret length (32) and login address are correct. Likely a misread character in the secret (it was only available as an image) or credentials no longer active (the document's sample token dates from March 2025). Orlando to confirm `pha-efficio` is active and get the secret **as text**, or a reset. Don't retry guesses against their login server |
 | 3 | **Field mapping**: from the check's output (or the Swagger UI / sample responses), map bookings → vessel visit → dates, and containers / gate moves → container progress | Claude | **Done** (table above) |
 | 4 | **Build the live connection** (`navis/adapter.ts`) with tests based on the real shapes, including tests that one customer never gets another's data (R-017) | Claude | **Built**, with tests on mixed-company data; to verify with real bookings (step 5) |
-| 5 | **Verify with real bookings**: on the super admin page, **Test a booking** with 2–3 bookings Orlando knows (one not yet at the terminal, one with containers delivered), and compare with Lynx | Eduardo + Orlando | **Ready** |
+| 5 | **Verify with real bookings**: on the super admin page, **Test a booking** with 2–3 bookings Orlando knows (one not yet at the terminal, one with containers delivered), and compare with Lynx | Eduardo + Orlando | **1 of 2–3 verified (2026-11-26):** booking 038NY1578254 (MSC, GSL SOFIA) mapped correctly: server-side filtering, vessel link, dates (local times look right), DM gate code, container. **Still needed:** a booking with a container delivered full / loaded (confirms RE and loading), and Orlando's comparison with Lynx |
 | 6 | **Off-site backups** before real data goes on the hosted copy (D-022) | Claude + Eduardo | Open |
 | 7 | **Switch Render to live**: add `PORT_HOUSTON_EVP_*` as secrets in Render, set `PORT_ADAPTER=navis`, remove sample data | Eduardo | Waits on 1, 5, 6 |
 

@@ -92,6 +92,9 @@ export async function runPortHoustonCheck(client?: EvpClient): Promise<string[]>
 export async function runBookingCheck(carrierCode: string, bookingNumber: string, client?: EvpClient): Promise<string[]> {
   const { NavisPortHoustonAdapter } = await import("./adapter");
   const { containerProgress } = await import("@/lib/domain/containers");
+  const { sizeTypeLabel } = await import("@/lib/domain/types");
+  const { formatHouston } = await import("@/lib/format");
+  const t = (iso: string | null | undefined) => (iso ? formatHouston(iso) : "—");
   const out: string[] = [`Booking ${bookingNumber.trim().toUpperCase()} · carrier ${carrierCode.trim().toUpperCase()}`, ""];
   let adapter;
   try {
@@ -107,19 +110,20 @@ export async function runBookingCheck(carrierCode: string, bookingNumber: string
       return out;
     }
     const p = containerProgress(s);
-    const cutoff = s.cutoffs.find((c) => c.kind === "cargo")?.at ?? "—";
     out.push(
       `  Terminal: ${s.terminal ?? "—"}`,
       `  Vessel: ${s.vesselVisit ? `${s.vesselVisit.vesselName} / ${s.vesselVisit.voyage ?? "—"} (visit ${s.vesselVisit.id})` : "—"}`,
-      `  Departs: ${s.vesselVisit?.etd ?? "—"}`,
-      `  Receiving opens: ${s.receivingOpensAt ?? "—"}`,
-      `  Cargo cutoff: ${cutoff}`,
-      `  Other cutoffs: ${s.cutoffs.filter((c) => c.kind !== "cargo").map((c) => `${c.kind} ${c.at}`).join(", ") || "—"}`,
-      `  Booked: ${(s.equipment ?? []).map((e) => `${e.quantity} × ${e.sizeType}`).join(", ") || "—"}`,
+      `  Departs: ${t(s.vesselVisit?.etd)}`,
+      `  Receiving opens: ${t(s.receivingOpensAt)}`,
+      `  Cargo cutoff: ${t(s.cutoffs.find((c) => c.kind === "cargo")?.at)}`,
+      `  Other cutoffs: ${s.cutoffs.filter((c) => c.kind !== "cargo").map((c) => `${c.kind} ${t(c.at)}`).join(", ") || "—"}`,
+      `  Booked: ${(s.equipment ?? []).map((e) => `${e.quantity} × ${sizeTypeLabel(e.sizeType)} (${e.sizeType})`).join(", ") || "—"}`,
       `  Containers: ${p.booked} booked · ${p.pickedUp} picked up · ${p.atTerminal} at terminal · ${p.loaded} on vessel`,
-      ...(s.containers ?? []).map((c) => `    ${c.number}  ${c.sizeType || "?"}  ${c.stage}  out ${c.emptyPickedUpAt ?? "—"}  in ${c.fullGateInAt ?? "—"}  loaded ${c.loadedAt ?? "—"}`),
+      ...(s.containers ?? []).map(
+        (c) => `    ${c.number}  ${sizeTypeLabel(c.sizeType) || "?"}  ${c.stage}  out ${t(c.emptyPickedUpAt)}  in ${t(c.fullGateInAt)}  loaded ${t(c.loadedAt)}`,
+      ),
       "",
-      "Times are UTC. Compare these with what Orlando sees in Lynx for the same booking.",
+      "Times are Houston time. Compare these with what Orlando sees in Lynx for the same booking.",
     );
   } catch (e) {
     out.push(`✗ ${e instanceof Error ? e.message : String(e)}`);

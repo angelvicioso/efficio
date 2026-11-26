@@ -97,3 +97,12 @@ describe("totals by vessel and carrier (Q-032: only your own containers)", () =>
     expect(groupByCarrier(s.list(acme)).map((g) => g.carrierCode)).toEqual(["MSCU", "MAEU"]);
   });
 });
+
+describe("size/type labels", () => {
+  it("covers current and older ISO codes seen at Port Houston", async () => {
+    const { sizeTypeLabel } = await import("../domain/types");
+    expect(sizeTypeLabel("2210")).toBe("20' standard");
+    expect(sizeTypeLabel("45G1")).toBe("40' high cube");
+    expect(sizeTypeLabel("ZZZZ")).toBe("ZZZZ");
+  });
+});

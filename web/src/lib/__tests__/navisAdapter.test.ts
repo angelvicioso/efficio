@@ -105,5 +105,7 @@ describe("Test a booking report", () => {
     expect(report).toContain("Vessel: MAERSK HOUSTON / 247E (visit MHOU)");
     expect(report).toContain("Containers: 4 booked · 3 picked up · 2 at terminal · 1 on vessel");
     expect(report).not.toMatch(/COMPETITOR|OTHER00001/);
+    expect(report).toContain("Cargo cutoff: Sat, Nov 28, 5:00 PM"); // 23:00 UTC shown in Houston time
+    expect(report).toContain("4 × 40' high cube (45G1)");
   });
 });

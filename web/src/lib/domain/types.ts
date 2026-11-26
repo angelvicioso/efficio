@@ -91,11 +91,33 @@ export const TERMINAL_LABELS: Record<Terminal, string> = {
 
 /** Friendly names for common ISO size/type codes. */
 export const SIZE_TYPE_LABELS: Record<string, string> = {
+  // Current ISO 6346 codes
+  "22G0": "20' standard",
   "22G1": "20' standard",
+  "42G0": "40' standard",
   "42G1": "40' standard",
+  "45G0": "40' high cube",
   "45G1": "40' high cube",
-  "45R1": "40' reefer",
   "22R1": "20' reefer",
+  "42R1": "40' reefer",
+  "45R1": "40' high cube reefer",
+  "22U1": "20' open top",
+  "42U1": "40' open top",
+  "22P1": "20' flat rack",
+  "42P1": "40' flat rack",
+  "22T0": "20' tank",
+  // Older ISO codes, still used by Port Houston (e.g. "2210" seen 2026-11-26)
+  "2200": "20' standard",
+  "2210": "20' standard",
+  "4200": "40' standard",
+  "4310": "40' standard",
+  "4500": "40' high cube",
+  "4510": "40' high cube",
+  "2232": "20' reefer",
+  "4332": "40' reefer",
+  "4532": "40' high cube reefer",
+  "2251": "20' open top",
+  "4351": "40' open top",
 };
 
 export function sizeTypeLabel(code: string): string {
