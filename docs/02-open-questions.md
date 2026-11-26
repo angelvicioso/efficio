@@ -31,7 +31,6 @@ Questions for the team. Each question has an **Owner** (see [Team](00-team.md)):
 | Q-031 | 🟢 | Orlando | **Which carriers should be in the carrier dropdown?** The app has a starter list of 11 major lines (Maersk, MSC, CMA CGM, Hapag-Lloyd, ONE, COSCO, Evergreen, OOCL, Yang Ming, HMM, ZIM). Which call Port Houston, and who's missing? Also: is picking the carrier natural for exporters, or annoying? | Keeps the dropdown short and correct (D-015). | |
 | Q-033 | 🟠 | Orlando | **Where do Houston exporters pick up empty containers?** From the Port Houston terminals (Barbours Cut/Bayport), or from off-dock depots and container yards? Does it vary by carrier? | Port data only covers empties released **from the terminal**. Empties from a depot would need carrier or depot data. | |
 | Q-036 | 🟢 | Orlando | **Do exporters need a phone app (App Store/Google Play), or is a mobile website enough?** A cheap middle step is "Add to Home Screen" with an app icon (no app store). | A native app is a big extra cost; most of the value (alerts) can come by email or text first. | |
-| Q-038 | 🟠 | Eduardo | **With live data, what should a *claimed* (not yet carrier-verified) exporter see?** Today: everything the port reports for that booking, including container numbers and gate times. Options: (a) everything (simplest; matches what anyone with the booking number may see in Lynx, see Q-029); (b) dates and counts only, container details after the carrier verifies. Recommendation: **(a) for the POC**, revisit when carriers join. | Someone could type another company's booking number (R-016). With live data, that shows real container details. | |
 
 ## Answered
 
@@ -50,4 +49,5 @@ Questions for the team. Each question has an **Owner** (see [Team](00-team.md)):
 | Q-032 | "Total containers on the vessel": yours or everyone's? | **Yours**: the containers on your own bookings, per vessel and per carrier. Answered by Eduardo. | D-020 |
 | Q-035 | Where should Efficio be hosted? | **Render**, team-only, free Render address, ≤ $20/mo, no fixed IP. Answered by Eduardo. | D-023, D-024 |
 | Q-037 | Is client pha-efficio active / can we get the secret as text? | **Resolved**: the connection succeeded on 2026-11-25. | D-028 |
+| Q-038 | With live data, what should a claimed (not yet verified) exporter see? | **(a) Everything the port reports for that booking**, including container numbers and gate times. Revisit when carriers join. Answered by Eduardo. | D-029 |
 | Q-012 | What is the third team member's background? | Javier: financial associate/analyst at a commercial real estate firm (full-time job). Strong in finance and business. | D-004 |
