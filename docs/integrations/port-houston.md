@@ -101,8 +101,8 @@ All five endpoints answered (100 records per page). **Every list contains all co
 | 3 | **Field mapping**: from the check's output (or the Swagger UI / sample responses), map bookings → vessel visit → dates, and containers / gate moves → container progress | Claude | **Done** (table above) |
 | 4 | **Build the live connection** (`navis/adapter.ts`) with tests based on the real shapes, including tests that one customer never gets another's data (R-017) | Claude | **Built**, with tests on mixed-company data; to verify with real bookings (step 5) |
 | 5 | **Verify with real bookings**: on the super admin page, **Test a booking** with 2–3 bookings Orlando knows (one not yet at the terminal, one with containers delivered), and compare with Lynx | Eduardo + Orlando | **1 of 2–3 verified (2026-11-26):** booking 038NY1578254 (MSC, GSL SOFIA) mapped correctly: server-side filtering, vessel link, dates (local times look right), DM gate code, container. **Still needed:** a booking with a container delivered full / loaded (confirms RE and loading), and Orlando's comparison with Lynx |
-| 6 | **Off-site backups** before real data goes on the hosted copy (D-022) | Claude + Eduardo | Open |
-| 7 | **Switch Render to live**: add `PORT_HOUSTON_EVP_*` as secrets in Render, set `PORT_ADAPTER=navis`, remove sample data | Eduardo | Waits on 1, 5, 6 |
+| 6 | **Off-site backups** (D-031: before the first real customer, no longer before live data) | Claude + Eduardo | Moved: before first customer |
+| 7 | **Switch Render to live**: add `PORT_HOUSTON_EVP_*` as secrets in Render, set `PORT_ADAPTER=navis`, remove sample data | Eduardo | **In progress 2026-11-26** (D-030). Watch: RE gate code and "loaded" status on the first delivered/loaded containers |
 
 ## Spike checklist (S-013)
 - [x] Confirm who owns these credentials: Orlando, for Efficio (D-010)
