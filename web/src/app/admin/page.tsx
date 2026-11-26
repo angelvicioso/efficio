@@ -116,7 +116,8 @@ export default async function AdminPage() {
         </ActionForm>
       </section>
 
-      {getPortAdapter().source === "mock" && (
+      {/* Remove must stay available after switching to live data; only Add is limited to simulated mode. */}
+      {(getPortAdapter().source === "mock" || hasSampleData(accounts)) && (
         <section className="card">
           <h2>Sample data</h2>
           <p className="muted small">
@@ -124,6 +125,12 @@ export default async function AdminPage() {
             containers, so there’s something to explore. It creates <strong>no logins</strong>: open the companies from the list
             above, or invite real people into them. Remove it any time; real companies are never touched.
           </p>
+          {hasSampleData(accounts) && getPortAdapter().source !== "mock" && (
+            <p className="callout small">
+              Efficio is on live Port Houston data, so these sample bookings now show as “not at terminal”. Remove them to keep
+              the live data clean.
+            </p>
+          )}
           {hasSampleData(accounts) ? (
             <ActionForm action={removeSampleDataAction} submitLabel="Remove sample data" variant="danger" />
           ) : (
