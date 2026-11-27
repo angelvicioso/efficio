@@ -124,3 +124,15 @@ export async function checkBookingAction(_prev: FormState, formData: FormData): 
   const { runBookingCheck } = await import("@/lib/ports/navis/check");
   return { details: (await runBookingCheck(carrierCode, bookingNumber)).join("\n") };
 }
+
+/** Password reset link for another super admin (D-032). */
+export async function resetSuperAdminPasswordAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const me = await requireSuperAdmin();
+  const target = accountService().getUser(Number(formData.get("userId")));
+  if (!target?.isSuperAdmin) return { error: "User not found." };
+  const { token } = accountService().createPasswordReset(target.id, me.id);
+  return {
+    message: `Reset link for ${target.email}. Send it privately. It works once and expires in 24 hours.`,
+    link: `${await baseUrl()}/reset/${token}`,
+  };
+}

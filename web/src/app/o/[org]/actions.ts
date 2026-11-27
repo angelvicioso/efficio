@@ -160,6 +160,19 @@ export async function unlockMemberAction(formData: FormData): Promise<void> {
   revalidatePath(`/o/${org.slug}/team`);
 }
 
+/** Password reset link for someone on this team (D-032). */
+export async function resetMemberPasswordAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const { user, org } = await requireTeamManager(slugOf(formData));
+  const target = memberOf(org.id, Number(formData.get("userId")));
+  if (!target) return { error: "User not found." };
+  if (target.id === user.id) return { error: "Ask another admin to reset your password." };
+  const { token } = accountService().createPasswordReset(target.id, user.id);
+  return {
+    message: `Reset link for ${target.email}. Send it privately. It works once and expires in 24 hours.`,
+    link: `${await baseUrl()}/reset/${token}`,
+  };
+}
+
 // ---------- Organization settings (super admins) ----------
 
 export async function addDomainAction(_prev: FormState, formData: FormData): Promise<FormState> {

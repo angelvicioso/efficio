@@ -227,3 +227,42 @@ describe("login lockout (R-014, D-021)", () => {
     expect((await a.authenticate("ann@acme.com", PASSWORD)).ok).toBe(true);
   });
 });
+
+describe("password resets (D-032)", () => {
+  it("sets a new password once, ends sessions and clears a lockout", async () => {
+    const { a, root, acme } = await setup();
+    const { token: inv } = a.createInvite({ email: "ann@acme.com", orgId: acme.id, orgRole: "admin", createdBy: root.id });
+    const ann = await join(a, inv);
+    const session = a.createSession(ann.id);
+    for (let i = 0; i < 5; i++) await a.authenticate("ann@acme.com", "wrong-password");
+    expect(a.lockedUntil("ann@acme.com")).not.toBeNull();
+
+    const { token } = a.createPasswordReset(ann.id, root.id);
+    expect(a.findPasswordReset(token)?.email).toBe("ann@acme.com");
+    await a.resetPassword(token, "a-brand-new-password");
+
+    expect(a.getSessionUser(session.token)).toBeNull();
+    expect(a.lockedUntil("ann@acme.com")).toBeNull();
+    expect((await a.authenticate("ann@acme.com", PASSWORD)).ok).toBe(false);
+    expect((await a.authenticate("ann@acme.com", "a-brand-new-password")).ok).toBe(true);
+    await expect(a.resetPassword(token, "another-password-1")).rejects.toThrow(/already used|invalid/);
+  });
+
+  it("expires after 24 hours, and a newer link replaces an older one", async () => {
+    let t = new Date("2026-12-01T12:00:00Z");
+    const { a, root } = await setup(() => t);
+    const first = a.createPasswordReset(root.id, root.id);
+    const second = a.createPasswordReset(root.id, root.id);
+    expect(a.findPasswordReset(first.token)).toBeNull();
+    expect(a.findPasswordReset(second.token)).not.toBeNull();
+    t = new Date("2026-12-02T12:00:01Z");
+    expect(a.findPasswordReset(second.token)).toBeNull();
+  });
+
+  it("enforces the minimum password length", async () => {
+    const { a, root } = await setup();
+    const { token } = a.createPasswordReset(root.id, root.id);
+    await expect(a.resetPassword(token, "short")).rejects.toThrow(/at least/);
+    expect(a.findPasswordReset(token)).not.toBeNull(); // not used up by a failed attempt
+  });
+});

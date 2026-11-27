@@ -50,7 +50,8 @@ The app's public address is detected automatically from Render (`RENDER_EXTERNAL
 ## If something goes wrong
 - **Deploy fails:** check **Logs** for the build output.
 - **"Service unavailable":** the health check (`/api/health`) failed. Check **Logs**; the usual cause is the disk not being attached.
-- **Locked out of every super admin account:** wait an hour (D-021), or ask Claude for help resetting through Render's **Shell** tab.
+- **A super admin forgot their password:** another super admin presses **Reset password** next to them on **All organizations** and sends the link (D-032).
+- **Locked out of every super admin account:** wait an hour (D-021). If *every* super admin has forgotten their password, ask Claude for help resetting through Render's **Shell** tab.
 
 ## If we merge to `main` later
 Change `branch:` in `render.yaml` to `main`, and change the branch in Render's service settings to match.

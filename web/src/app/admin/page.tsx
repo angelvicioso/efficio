@@ -15,6 +15,7 @@ import {
   removeSampleDataAction,
   checkPortHoustonAction,
   checkBookingAction,
+  resetSuperAdminPasswordAction,
 } from "./actions";
 import { portHoustonConfigured } from "@/lib/ports/navis/check";
 import { hasSampleData } from "@/lib/demo/sample";
@@ -219,10 +220,15 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                   </td>
                   <td className="actions-cell">
                     {u.id !== me.id && (
-                      <ActionForm action={setSuperAdminDisabledAction} submitLabel={u.disabled ? "Enable" : "Disable"} variant="secondary" className="inline">
-                        <input type="hidden" name="userId" value={u.id} />
-                        <input type="hidden" name="disabled" value={u.disabled ? "0" : "1"} />
-                      </ActionForm>
+                      <div className="row-actions">
+                        <ActionForm action={resetSuperAdminPasswordAction} submitLabel="Reset password" variant="secondary" className="inline reset-form">
+                          <input type="hidden" name="userId" value={u.id} />
+                        </ActionForm>
+                        <ActionForm action={setSuperAdminDisabledAction} submitLabel={u.disabled ? "Enable" : "Disable"} variant="secondary" className="inline">
+                          <input type="hidden" name="userId" value={u.id} />
+                          <input type="hidden" name="disabled" value={u.disabled ? "0" : "1"} />
+                        </ActionForm>
+                      </div>
                     )}
                   </td>
                 </tr>

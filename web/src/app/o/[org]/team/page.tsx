@@ -11,6 +11,7 @@ import {
   setDisabledAction,
   setRoleAction,
   unlockMemberAction,
+  resetMemberPasswordAction,
 } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -83,11 +84,17 @@ export default async function TeamPage({ params }: { params: Promise<{ org: stri
                     </td>
                     <td className="actions-cell">
                       {m.id !== user.id && (
-                        <ActionForm action={setDisabledAction} submitLabel={m.disabled ? "Enable" : "Disable"} variant="secondary" className="inline">
-                          <input type="hidden" name="org" value={org.slug} />
-                          <input type="hidden" name="userId" value={m.id} />
-                          <input type="hidden" name="disabled" value={m.disabled ? "0" : "1"} />
-                        </ActionForm>
+                        <div className="row-actions">
+                          <ActionForm action={resetMemberPasswordAction} submitLabel="Reset password" variant="secondary" className="inline reset-form">
+                            <input type="hidden" name="org" value={org.slug} />
+                            <input type="hidden" name="userId" value={m.id} />
+                          </ActionForm>
+                          <ActionForm action={setDisabledAction} submitLabel={m.disabled ? "Enable" : "Disable"} variant="secondary" className="inline">
+                            <input type="hidden" name="org" value={org.slug} />
+                            <input type="hidden" name="userId" value={m.id} />
+                            <input type="hidden" name="disabled" value={m.disabled ? "0" : "1"} />
+                          </ActionForm>
+                        </div>
                       )}
                     </td>
                   </tr>

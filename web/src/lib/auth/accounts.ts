@@ -58,6 +58,8 @@ export class AccountError extends Error {
 export const SESSION_DAYS = 14;
 export const INVITE_DAYS = 7;
 export const MIN_PASSWORD_LENGTH = 10;
+/** Password reset links are valid this long (D-032). */
+export const RESET_HOURS = 24;
 /** R-014 / D-021: 5 wrong passwords in a row lock the email for an hour. */
 export const MAX_FAILED_LOGINS = 5;
 export const LOCKOUT_MINUTES = 60;
@@ -408,6 +410,45 @@ export class AccountService {
     });
     this.db.prepare("UPDATE invites SET used_at = ? WHERE token_hash = ?").run(this.iso(), hashToken(token));
     return user;
+  }
+
+  // ---------- Password resets (D-032) ----------
+
+  /**
+   * Creates a single-use reset link token for a user. Any earlier unused link for them stops
+   * working. Callers must check the admin may manage this user (see app actions).
+   */
+  createPasswordReset(userId: number, createdBy: number): { token: string; expiresAt: string } {
+    const user = this.getUser(userId);
+    if (!user) throw new AccountError("User not found.");
+    this.db.prepare("DELETE FROM password_resets WHERE user_id = ? AND used_at IS NULL").run(userId);
+    const token = newToken();
+    const expiresAt = this.iso(RESET_HOURS * 60 * 60 * 1000);
+    this.db
+      .prepare("INSERT INTO password_resets (token_hash, user_id, created_by, expires_at, created_at) VALUES (?, ?, ?, ?, ?)")
+      .run(hashToken(token), userId, createdBy, expiresAt, this.iso());
+    return { token, expiresAt };
+  }
+
+  /** The user a usable (unused, unexpired) reset link belongs to, or null. */
+  findPasswordReset(token: string): User | null {
+    const row = this.db
+      .prepare("SELECT user_id FROM password_resets WHERE token_hash = ? AND used_at IS NULL AND expires_at > ?")
+      .get(hashToken(token), this.iso()) as { user_id: number } | undefined;
+    return row ? this.getUser(row.user_id) : null;
+  }
+
+  /** Sets the new password, uses up the link, ends every existing sign-in and clears any lockout. */
+  async resetPassword(token: string, newPassword: string): Promise<User> {
+    const user = this.findPasswordReset(token);
+    if (!user) throw new AccountError("This reset link is invalid, already used or expired. Ask an admin for a new one.");
+    if (newPassword.length < MIN_PASSWORD_LENGTH) throw new AccountError(`Passwords need at least ${MIN_PASSWORD_LENGTH} characters.`);
+    const hash = await hashPassword(newPassword);
+    this.db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(hash, user.id);
+    this.db.prepare("UPDATE password_resets SET used_at = ? WHERE token_hash = ?").run(this.iso(), hashToken(token));
+    this.db.prepare("DELETE FROM sessions WHERE user_id = ?").run(user.id);
+    this.unlock(user.email);
+    return this.getUser(user.id)!;
   }
 
   // ---------- Login & sessions ----------

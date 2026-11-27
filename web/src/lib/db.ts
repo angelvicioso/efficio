@@ -6,7 +6,7 @@ import path from "node:path";
  * SQLite via Node's built-in driver: no native build step, one file on disk.
  * Fine for a single-server POC; swap for Postgres when we have real users.
  */
-const SCHEMA_VERSION = 4;
+const SCHEMA_VERSION = 5;
 
 /**
  * Shared bookings (P-001, D-015): one record per real booking (carrier + number).
@@ -55,6 +55,18 @@ const LOGIN_ATTEMPTS_TABLE = `
   );
 `;
 
+/** Admin-issued password reset links (D-032). Only the token's hash is stored. */
+const PASSWORD_RESETS_TABLE = `
+  CREATE TABLE password_resets (
+    token_hash TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    expires_at TEXT NOT NULL,
+    used_at TEXT,
+    created_at TEXT NOT NULL
+  );
+`;
+
 /**
  * Upgrades from older versions. v2 -> v3 keeps organizations, users, sessions and invites,
  * and resets bookings: before v3 they had no carrier and only ever held simulated data.
@@ -68,6 +80,7 @@ const MIGRATIONS: Record<number, string> = {
     ${BOOKING_TABLES}
   `,
   4: LOGIN_ATTEMPTS_TABLE,
+  5: PASSWORD_RESETS_TABLE,
 };
 
 const SCHEMA = `
@@ -113,7 +126,7 @@ const SCHEMA = `
     used_at TEXT,
     created_at TEXT NOT NULL
   );
-${BOOKING_TABLES}${LOGIN_ATTEMPTS_TABLE}  CREATE INDEX users_org ON users(org_id);
+${BOOKING_TABLES}${LOGIN_ATTEMPTS_TABLE}${PASSWORD_RESETS_TABLE}  CREATE INDEX users_org ON users(org_id);
   CREATE INDEX sessions_user ON sessions(user_id);
 `;
 

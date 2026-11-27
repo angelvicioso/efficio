@@ -66,3 +66,17 @@ export async function acceptInviteAction(_prev: FormState, formData: FormData): 
   await startSession(user.id);
   redirect(homePath(user));
 }
+
+export async function resetPasswordAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const password = String(formData.get("password") ?? "");
+  if (password !== String(formData.get("confirm") ?? "")) return { error: "The passwords don't match." };
+  let user;
+  try {
+    user = await accountService().resetPassword(String(formData.get("token") ?? ""), password);
+  } catch (e) {
+    return { error: message(e) };
+  }
+  if (user.disabled) redirect("/login");
+  await startSession(user.id);
+  redirect(homePath(user));
+}
