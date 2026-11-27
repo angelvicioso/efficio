@@ -15,7 +15,7 @@ Stories are **Draft** until their blocking questions are answered and acceptance
 ### E-01 · Exporter booking tracking
 | ID | Story | Blocked by | Status |
 |---|---|---|---|
-| S-001 | As an **exporter**, I want to **add a booking by carrier + booking number** (Port Houston), so that the platform starts tracking it. | — | **Built (mock)** with a required carrier dropdown (D-015) |
+| S-001 | As an **exporter**, I want to **add a booking by its number** (Port Houston), so that the platform starts tracking it. | — | **Built (live)**: carrier found automatically, asked only when needed (D-033) |
 | S-002 | As an **exporter**, I want to **see my booking's receiving window (ERD to cargo cutoff) and cutoffs** as Port Houston reports them, plus whether the booking is on file at the terminal, so that I know when I can deliver and the deadline. | Q-018, R-006 | **Built (mock)** |
 | S-003 | As an **exporter**, I want a **countdown view of the receiving window** (not open yet, open with X days left, closing soon, closed), so I can act before the cutoff. A fuller timeline (gated in → loaded → departed) comes later. | Q-018 | **Built (mock)**, 48h threshold pending Q-022 |
 | S-004 | As an **exporter**, I want a **list of all my tracked bookings** with key dates and status, so I can spot problems across shipments. | Q-007 | **Built (mock)** |

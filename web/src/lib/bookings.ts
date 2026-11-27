@@ -1,6 +1,6 @@
 import type { DatabaseSync } from "node:sqlite";
 import type { Organization, OrgType } from "./auth/accounts";
-import { isKnownCarrier } from "./domain/carriers";
+import { carrierName } from "./domain/carriers";
 import type { PortAdapter } from "./ports/adapter";
 import type { PortBookingSnapshot } from "./domain/types";
 
@@ -88,6 +88,9 @@ export class BookingError extends Error {
 /** Bookings stop auto-refreshing this long after their vessel's departure. */
 const FINISHED_AFTER_MS = 24 * 60 * 60 * 1000;
 
+/** A carrier code in SCAC form: four letters (e.g. MAEU). Any SCAC the port reports is accepted. */
+const SCAC = /^[A-Z]{4}$/;
+
 /** Booking numbers: letters, digits and dashes, 4–30 characters (Q-023). */
 const BOOKING_NUMBER = /^[A-Z0-9-]{4,30}$/;
 
@@ -134,12 +137,13 @@ export class BookingService {
     input: { carrierCode: string; bookingNumber: string },
     addedBy: number | null = null,
   ): Promise<{ id: number; created: boolean }> {
-    const carrierCode = input.carrierCode.trim().toUpperCase();
     const bookingNumber = normalizeBookingNumber(input.bookingNumber);
-    if (!isKnownCarrier(carrierCode)) throw new BookingError("Choose the carrier that issued this booking.");
     if (!BOOKING_NUMBER.test(bookingNumber)) {
       throw new BookingError("Booking numbers should be 4 to 30 letters, digits or dashes.");
     }
+    // No carrier chosen: find it at the port (D-033).
+    const carrierCode = input.carrierCode.trim() ? input.carrierCode.trim().toUpperCase() : await this.detectCarrier(bookingNumber);
+    if (!SCAC.test(carrierCode)) throw new BookingError("Choose the carrier that issued this booking.");
     if (viewer.type === "ocean_carrier" && viewer.carrierCode !== carrierCode) {
       throw new BookingError("Carriers can only add their own bookings.");
     }
@@ -175,6 +179,23 @@ export class BookingService {
     // Port data is shared, but a newly attached party gets a fresh reading so its history starts now.
     if (created) await this.fetch(booking.id);
     return { id: booking.id, created };
+  }
+
+  /** The one carrier the port has this booking number under, or a clear reason to ask the user. */
+  private async detectCarrier(bookingNumber: string): Promise<string> {
+    let found: string[];
+    try {
+      found = await this.adapter.findCarriers(bookingNumber);
+    } catch {
+      throw new BookingError("Couldn't reach the port to find the carrier. Choose the carrier and try again.");
+    }
+    if (found.length === 1) return found[0];
+    if (found.length === 0) {
+      throw new BookingError(
+        "The terminal doesn't have this booking yet, so Efficio can't tell its carrier. Choose the carrier to start tracking it anyway.",
+      );
+    }
+    throw new BookingError(`This booking number exists under more than one carrier (${found.map(carrierName).join(", ")}). Choose the carrier.`);
   }
 
   /** How the viewer can see this booking, or null if it can't. */

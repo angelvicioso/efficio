@@ -16,6 +16,11 @@ export interface PortAdapter {
   /** Human-readable name for the UI. */
   readonly displayName: string;
   lookupBooking(ref: BookingRef): Promise<PortBookingSnapshot>;
+  /**
+   * Carrier codes (SCAC) of the bookings with exactly this number at the port, so exporters
+   * don't have to pick the carrier (D-033). Empty when the port doesn't have the booking yet.
+   */
+  findCarriers(bookingNumber: string): Promise<string[]>;
 }
 
 /** Raised when an adapter can't serve a request yet, e.g. endpoints still unconfirmed. */

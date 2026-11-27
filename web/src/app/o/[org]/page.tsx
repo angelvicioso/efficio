@@ -47,7 +47,7 @@ export default async function OrgBookingsPage({ params }: { params: Promise<{ or
               <code>{num}</code> with {carrierName(s.carrierCode)} ({s.description.toLowerCase()})
             </span>
           ))}
-          . Any other number, or the wrong carrier, shows as not yet at the terminal.
+          . Leave the carrier on “Find automatically” and Efficio looks it up. Any other number isn’t at the terminal yet.
         </p>
       )}
 

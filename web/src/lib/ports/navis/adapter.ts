@@ -170,6 +170,13 @@ export class NavisPortHoustonAdapter implements PortAdapter {
 
   constructor(private readonly client: EvpClient = EvpClient.fromEnv()) {}
 
+  async findCarriers(bookingNumber: string): Promise<string[]> {
+    const number = bookingNumber.trim().toUpperCase();
+    const found = await this.client.query<N4Booking>("orders/bookings", { predicate: `nbr=${number}`, maxPages: 1 });
+    const scacs = found.filter((b) => same(b.nbr, number) && b.lineScac).map((b) => b.lineScac!.trim().toUpperCase());
+    return [...new Set(scacs)];
+  }
+
   async lookupBooking(ref: BookingRef, trace: TraceFn = () => {}): Promise<PortBookingSnapshot> {
     const bookingNumber = ref.bookingNumber.trim().toUpperCase();
     const scac = ref.carrierCode.trim().toUpperCase();

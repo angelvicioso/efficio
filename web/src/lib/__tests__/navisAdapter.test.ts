@@ -127,3 +127,10 @@ describe("booked quantity", () => {
     expect(remainingToPickUp({ booked: 1, pickedUp: 1, atTerminal: 0, loaded: 0 })).toBe(0);
   });
 });
+
+describe("finding the carrier for a booking number", () => {
+  it("returns only carriers of exact-number matches, without duplicates", async () => {
+    const found = await new NavisPortHoustonAdapter(client()).findCarriers("mae1234567");
+    expect(found.sort()).toEqual(["MAEU", "MSCU"]); // OTHER00001 (another company's booking) is ignored
+  });
+});

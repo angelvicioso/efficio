@@ -2,7 +2,7 @@ import { CARRIERS, carrierName } from "@/lib/domain/carriers";
 import { ActionForm } from "../../ActionForm";
 import { addBookingAction } from "./actions";
 
-/** Exporters pick the carrier (D-015); carrier organizations can only add their own bookings. */
+/** The carrier is found automatically unless chosen (D-033); carrier organizations can only add their own bookings. */
 export function AddBookingForm({ org, fixedCarrier }: { org: string; fixedCarrier: string | null }) {
   return (
     <ActionForm action={addBookingAction} submitLabel="Track" pendingLabel="Checking…" className="add-form">
@@ -12,10 +12,8 @@ export function AddBookingForm({ org, fixedCarrier }: { org: string; fixedCarrie
         {fixedCarrier ? (
           <span className="fixed-carrier">{carrierName(fixedCarrier)}</span>
         ) : (
-          <select name="carrierCode" required defaultValue="" aria-label="Carrier">
-            <option value="" disabled>
-              Carrier…
-            </option>
+          <select name="carrierCode" defaultValue="" aria-label="Carrier">
+            <option value="">Find carrier automatically</option>
             {Object.entries(CARRIERS).map(([code, name]) => (
               <option key={code} value={code}>
                 {name}

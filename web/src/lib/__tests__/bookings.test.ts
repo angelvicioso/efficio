@@ -30,11 +30,45 @@ describe("adding bookings", () => {
     expect(b.latest?.data?.onFile).toBe(true);
   });
 
-  it("requires a known carrier and a valid number", async () => {
+  it("requires a valid carrier code and booking number", async () => {
     const { s, acme } = setup();
-    await expect(s.add(acme, { carrierCode: "", bookingNumber: "HOU1002" })).rejects.toThrow(/carrier/);
-    await expect(s.add(acme, { carrierCode: "XXXX", bookingNumber: "HOU1002" })).rejects.toThrow(/carrier/);
+    await expect(s.add(acme, { carrierCode: "XX", bookingNumber: "HOU1002" })).rejects.toThrow(/carrier/);
     await expect(s.add(acme, M("ab"))).rejects.toThrow(/4 to 30/);
+  });
+
+  it("finds the carrier automatically when none is chosen (D-033)", async () => {
+    const { s, acme } = setup();
+    const { id } = await s.add(acme, { carrierCode: "", bookingNumber: "hou1002" });
+    expect(s.get(acme, id)).toMatchObject({ carrierCode: "MAEU", bookingNumber: "HOU1002" });
+    expect(s.get(acme, id)!.latest?.data?.onFile).toBe(true);
+  });
+
+  it("asks for the carrier when the port doesn't have the booking yet", async () => {
+    const { s, acme } = setup();
+    await expect(s.add(acme, { carrierCode: "", bookingNumber: "NOTYET123" })).rejects.toThrow(/Choose the carrier to start tracking it anyway/);
+    // Choosing it still works: the booking is tracked as not yet at the terminal
+    const { id } = await s.add(acme, { carrierCode: "MSCU", bookingNumber: "NOTYET123" });
+    expect(s.get(acme, id)!.latest?.data?.onFile).toBe(false);
+  });
+
+  it("asks for the carrier when the number exists under several carriers", async () => {
+    const db = openDb(":memory:");
+    const acme = new AccountService(db).createOrganization({ name: "Acme Exports", type: "exporter" });
+    const twoCarriers: PortAdapter = { ...new MockPortHoustonAdapter(), source: "mock", displayName: "x", lookupBooking: new MockPortHoustonAdapter().lookupBooking, findCarriers: async () => ["MAEU", "MSCU"] };
+    await expect(new BookingService(db, twoCarriers).add(acme, { carrierCode: "", bookingNumber: "HOU1002" })).rejects.toThrow(/more than one carrier \(Maersk, MSC\)/);
+  });
+
+  it("explains when the port can't be reached to find the carrier", async () => {
+    const db = openDb(":memory:");
+    const acme = new AccountService(db).createOrganization({ name: "Acme Exports", type: "exporter" });
+    const down: PortAdapter = { source: "x", displayName: "x", lookupBooking: async () => { throw new Error("down"); }, findCarriers: async () => { throw new Error("down"); } };
+    await expect(new BookingService(db, down).add(acme, { carrierCode: "", bookingNumber: "HOU1002" })).rejects.toThrow(/Couldn't reach the port/);
+  });
+
+  it("accepts carriers outside the dropdown list when the port reports them", async () => {
+    const { s, acme } = setup();
+    const { id } = await s.add(acme, { carrierCode: "SMLU", bookingNumber: "ANYNUM1" });
+    expect(s.get(acme, id)!.carrierCode).toBe("SMLU");
   });
 
   it("shows not on file when the carrier is wrong", async () => {
@@ -155,6 +189,9 @@ describe("refreshing", () => {
       source: "broken",
       displayName: "Broken",
       lookupBooking: async () => {
+        throw new Error("port unavailable");
+      },
+      findCarriers: async () => {
         throw new Error("port unavailable");
       },
     };

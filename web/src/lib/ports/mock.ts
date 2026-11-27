@@ -58,6 +58,11 @@ export class MockPortHoustonAdapter implements PortAdapter {
 
   constructor(private readonly now: () => Date = () => new Date()) {}
 
+  async findCarriers(bookingNumber: string): Promise<string[]> {
+    const s = MOCK_SCENARIOS[bookingNumber.trim().toUpperCase()];
+    return s ? [s.carrierCode] : [];
+  }
+
   async lookupBooking(ref: BookingRef): Promise<PortBookingSnapshot> {
     const key = ref.bookingNumber.trim().toUpperCase();
     const carrierCode = ref.carrierCode.trim().toUpperCase();
