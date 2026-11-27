@@ -16,6 +16,8 @@ import { refreshAllAction } from "./actions";
 import { refreshIntervalMinutes } from "@/lib/scheduler";
 import { containerProgress, remainingToPickUp } from "@/lib/domain/containers";
 import { parseSort, sortBookings, type SortDir, type SortKey } from "@/lib/domain/sortBookings";
+import { ACTION_LABELS, filterBookings, filterOptions, isFiltered, parseFilters, type BookingFilters } from "@/lib/domain/filterBookings";
+import { FilterBar } from "./FilterBar";
 
 export const dynamic = "force-dynamic";
 
@@ -24,15 +26,18 @@ export default async function OrgBookingsPage({
   searchParams,
 }: {
   params: Promise<{ org: string }>;
-  searchParams: Promise<{ sort?: string; dir?: string }>;
+  searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const { org: slug } = await params;
   const { org } = await requireOrgAccess(slug);
   const sp = await searchParams;
   const sort = parseSort(sp.sort, sp.dir);
-  const bookings = sortBookings(bookingService().list(org), sort.key, sort.dir);
+  const filters = parseFilters(sp);
+  const all = bookingService().list(org);
+  const bookings = sortBookings(filterBookings(all, filters), sort.key, sort.dir);
+  const filtered = isFiltered(filters);
   const header = (key: SortKey, label: string, numeric = false) => (
-    <SortHeader key={key} org={org.slug} column={key} label={label} active={sort.key === key} dir={sort.dir} numeric={numeric} />
+    <SortHeader key={key} org={org.slug} column={key} label={label} active={sort.key === key} dir={sort.dir} numeric={numeric} filters={filters} />
   );
   const isCarrier = org.type === "ocean_carrier";
   const refreshMinutes = refreshIntervalMinutes();
@@ -65,13 +70,28 @@ export default async function OrgBookingsPage({
         </p>
       )}
 
-      {bookings.length === 0 ? (
+      {all.length > 0 && (
+        <FilterBar
+          action={`/o/${org.slug}`}
+          values={filters as unknown as Record<string, string>}
+          options={{ ...filterOptions(all), actions: Object.entries(ACTION_LABELS) }}
+          sort={sort.key}
+          dir={sort.dir}
+          filtered={filtered}
+        />
+      )}
+
+      {all.length === 0 ? (
         <p className="empty">No bookings tracked yet. Add a booking number above to start.</p>
+      ) : bookings.length === 0 ? (
+        <p className="empty">
+          No bookings match these filters. <a href={`/o/${org.slug}`}>Clear filters</a>
+        </p>
       ) : (
         <section>
           <div className="list-header">
             <div>
-              <h2>Tracked bookings ({bookings.length})</h2>
+              <h2>{filtered ? `Showing ${bookings.length} of ${all.length} bookings` : `Tracked bookings (${all.length})`}</h2>
               <p className="muted small no-margin">
                 {refreshMinutes > 0
                   ? `Updates automatically every ${refreshMinutes} minute${refreshMinutes === 1 ? "" : "s"}.`
@@ -164,6 +184,7 @@ function SortHeader({
   active,
   dir,
   numeric,
+  filters,
 }: {
   org: string;
   column: SortKey;
@@ -171,11 +192,15 @@ function SortHeader({
   active: boolean;
   dir: SortDir;
   numeric: boolean;
+  filters: BookingFilters;
 }) {
   const next: SortDir = active && dir === "asc" ? "desc" : "asc";
+  // Keep the current filters when changing the sort.
+  const params = new URLSearchParams({ sort: column, dir: next });
+  for (const [k, v] of Object.entries(filters)) if (v) params.set(k, v);
   return (
     <th aria-sort={active ? (dir === "asc" ? "ascending" : "descending") : "none"} className={numeric ? "num" : undefined}>
-      <Link href={`/o/${org}?sort=${column}&dir=${next}`} className={`sort-link${active ? " sort-active" : ""}`} scroll={false}>
+      <Link href={`/o/${org}?${params}`} className={`sort-link${active ? " sort-active" : ""}`} scroll={false}>
         {label}
         <span aria-hidden="true" className="sort-arrow">
           {active ? (dir === "asc" ? "▲" : "▼") : "↕"}
