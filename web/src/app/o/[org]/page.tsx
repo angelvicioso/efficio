@@ -9,6 +9,7 @@ import { MOCK_SCENARIOS } from "@/lib/ports/mock";
 import { getPortAdapter } from "@/lib/ports";
 import { StatusBadge } from "../../StatusBadge";
 import { AccessBadge } from "../../AccessBadge";
+import { CarrierTrackingLink } from "../../CarrierTrackingLink";
 import { carrierName } from "@/lib/domain/carriers";
 import { AddBookingForm } from "./AddBookingForm";
 import { refreshAllAction } from "./actions";
@@ -115,6 +116,9 @@ export default async function OrgBookingsPage({
                       </td>
                       <td>
                         {carrierName(b.carrierCode)}
+                        <div>
+                          <CarrierTrackingLink carrierCode={b.carrierCode} bookingNumber={b.bookingNumber} compact />
+                        </div>
                         <div>
                           <AccessBadge access={b.access} />
                         </div>

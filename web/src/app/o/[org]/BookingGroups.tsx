@@ -8,6 +8,7 @@ import type { GroupSummary } from "@/lib/domain/vessels";
 import { formatHouston } from "@/lib/format";
 import { AccessBadge } from "../../AccessBadge";
 import { StatusBadge } from "../../StatusBadge";
+import { CarrierTrackingLink } from "../../CarrierTrackingLink";
 
 /** Shared pieces of the Vessels and Carriers views: group header, bookings, containers. */
 
@@ -136,6 +137,9 @@ export function BookingList({
                 <Link href={`/o/${org}/bookings/${b.id}`} className="small">
                   Open booking →
                 </Link>
+                <span className="small">
+                  <CarrierTrackingLink carrierCode={b.carrierCode} bookingNumber={b.bookingNumber} />
+                </span>
               </div>
               <ContainerTable snap={snap} />
             </div>

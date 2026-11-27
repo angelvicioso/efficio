@@ -31,6 +31,7 @@ Questions for the team. Each question has an **Owner** (see [Team](00-team.md)):
 | Q-031 | 🟢 | Orlando | **Which carriers should be in the carrier dropdown?** Less important since D-033: the carrier is now found automatically, and the dropdown is only needed for bookings not yet at the terminal. | Keeps the fallback list short and correct. | |
 | Q-033 | 🟠 | Orlando | **Where do Houston exporters pick up empty containers?** From the Port Houston terminals (Barbours Cut/Bayport), or from off-dock depots and container yards? Does it vary by carrier? | Port data only covers empties released **from the terminal**. Empties from a depot would need carrier or depot data. | |
 | Q-036 | 🟢 | Orlando | **Do exporters need a phone app (App Store/Google Play), or is a mobile website enough?** A cheap middle step is "Add to Home Screen" with an app icon (no app store). | A native app is a big extra cost; most of the value (alerts) can come by email or text first. | |
+| Q-039 | 🟢 | Orlando / Eduardo | **Check the carrier tracking links** with a real booking each: MSC, CMA CGM, Hapag-Lloyd, ONE, COSCO, ZIM should open straight on the booking; Evergreen, OOCL, Yang Ming, HMM open their tracking page. Report any that land on an error or the wrong page, with the right address if you have it. | Only Maersk's format is confirmed (D-034). Carriers change their sites, so a wrong link just needs its address updated in one file. | |
 
 ## Answered
 

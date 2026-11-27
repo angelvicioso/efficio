@@ -274,3 +274,9 @@ table.containers th, table.containers td { white-space: nowrap; }
 .sort-active .sort-arrow { opacity: 1; color: var(--accent); }
 th.num, td.num { text-align: right; }
 td.num .to-pick-up { white-space: nowrap; }
+
+/* ---------- Carrier tracking links ---------- */
+.carrier-link { font-weight: 600; white-space: nowrap; }
+.carrier-link-compact { font-size: 0.78rem; font-weight: 500; }
+.hero-actions .carrier-link { font-size: 0.9rem; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }

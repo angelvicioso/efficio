@@ -9,6 +9,7 @@ import { formatAgo, formatHouston } from "@/lib/format";
 import { StatusBadge } from "../../../../StatusBadge";
 import { refreshBookingAction, removeBookingAction, removePartyAction, verifyPartyAction } from "../../actions";
 import { AccessBadge } from "../../../../AccessBadge";
+import { CarrierTrackingLink } from "../../../../CarrierTrackingLink";
 import { PARTY_ROLE_LABELS } from "@/lib/bookings";
 import { carrierName } from "@/lib/domain/carriers";
 import { ContainerCounts, ContainerTable } from "../../BookingGroups";
@@ -52,6 +53,7 @@ export default async function BookingPage({ params }: { params: Promise<{ org: s
         </div>
         <div className="hero-actions">
           {status && <StatusBadge status={status} large />}
+          <CarrierTrackingLink carrierCode={booking.carrierCode} bookingNumber={booking.bookingNumber} />
           <form action={refreshBookingAction}>
             <input type="hidden" name="org" value={org.slug} />
             <input type="hidden" name="id" value={booking.id} />
