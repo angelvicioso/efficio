@@ -55,6 +55,8 @@ code { font-size: 0.9em; }
 .source-mock { background: var(--amber-bg); color: var(--amber-fg); }
 
 .container { max-width: 1040px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+/* The bookings table has many columns: give it room on large screens. */
+.container:has(.bookings-table) { max-width: 1320px; }
 .intro { margin-bottom: 1.25rem; }
 .muted { color: var(--muted); }
 .small { font-size: 0.82rem; }
@@ -263,3 +265,12 @@ table.containers th, table.containers td { white-space: nowrap; }
 .reset-form { flex-direction: column; align-items: flex-end; max-width: 380px; }
 .reset-form .form-message { font-size: 0.82rem; text-align: right; }
 .reset-form .copy-link { width: 100%; min-width: 260px; }
+
+/* ---------- Sortable bookings table ---------- */
+.sort-link { color: inherit; text-decoration: none; display: inline-flex; align-items: center; gap: 0.3rem; white-space: nowrap; }
+.sort-link:hover { color: var(--accent); }
+.sort-active { color: var(--text); }
+.sort-arrow { font-size: 0.7rem; opacity: 0.55; }
+.sort-active .sort-arrow { opacity: 1; color: var(--accent); }
+th.num, td.num { text-align: right; }
+td.num .to-pick-up { white-space: nowrap; }

@@ -13,13 +13,26 @@ import { carrierName } from "@/lib/domain/carriers";
 import { AddBookingForm } from "./AddBookingForm";
 import { refreshAllAction } from "./actions";
 import { refreshIntervalMinutes } from "@/lib/scheduler";
+import { containerProgress, remainingToPickUp } from "@/lib/domain/containers";
+import { parseSort, sortBookings, type SortDir, type SortKey } from "@/lib/domain/sortBookings";
 
 export const dynamic = "force-dynamic";
 
-export default async function OrgBookingsPage({ params }: { params: Promise<{ org: string }> }) {
+export default async function OrgBookingsPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ org: string }>;
+  searchParams: Promise<{ sort?: string; dir?: string }>;
+}) {
   const { org: slug } = await params;
   const { org } = await requireOrgAccess(slug);
-  const bookings = bookingService().list(org);
+  const sp = await searchParams;
+  const sort = parseSort(sp.sort, sp.dir);
+  const bookings = sortBookings(bookingService().list(org), sort.key, sort.dir);
+  const header = (key: SortKey, label: string, numeric = false) => (
+    <SortHeader key={key} org={org.slug} column={key} label={label} active={sort.key === key} dir={sort.dir} numeric={numeric} />
+  );
   const isCarrier = org.type === "ocean_carrier";
   const refreshMinutes = refreshIntervalMinutes();
   const isMock = getPortAdapter().source === "mock";
@@ -44,7 +57,7 @@ export default async function OrgBookingsPage({ params }: { params: Promise<{ or
           {Object.entries(MOCK_SCENARIOS).map(([num, s], i) => (
             <span key={num}>
               {i > 0 && ", "}
-              <code>{num}</code> with {carrierName(s.carrierCode)} ({s.description.toLowerCase()})
+              <code>{num}</code> with {carrierName(s.carrierCode)} ({/^[A-Z][a-z]/.test(s.description) ? s.description.charAt(0).toLowerCase() + s.description.slice(1) : s.description})
             </span>
           ))}
           . Leave the carrier on “Find automatically” and Efficio looks it up. Any other number isn’t at the terminal yet.
@@ -72,21 +85,26 @@ export default async function OrgBookingsPage({ params }: { params: Promise<{ or
             </form>
           </div>
           <div className="table-wrap">
-            <table>
+            <table className="bookings-table">
               <thead>
                 <tr>
-                  <th>Booking</th>
-                  <th>Carrier</th>
-                  <th>Status</th>
-                  <th>Receiving opens</th>
-                  <th>Cargo cutoff</th>
-                  <th>Updated</th>
+                  {header("booking", "Booking")}
+                  {header("carrier", "Carrier")}
+                  {header("status", "Status")}
+                  {header("containers", "Containers", true)}
+                  {header("pickedUp", "Picked up", true)}
+                  {header("atTerminal", "At terminal", true)}
+                  {header("opens", "Receiving opens")}
+                  {header("cutoff", "Cargo cutoff")}
+                  {header("updated", "Updated")}
                 </tr>
               </thead>
               <tbody>
                 {bookings.map((b) => {
                   const snap = b.latest?.data;
                   const changes = snap && b.previous?.data ? diffSnapshots(b.previous.data, snap) : [];
+                  const p = snap?.onFile ? containerProgress(snap) : null;
+                  const notYet = p ? remainingToPickUp(p) : 0;
                   return (
                     <tr key={b.id}>
                       <td>
@@ -113,6 +131,12 @@ export default async function OrgBookingsPage({ params }: { params: Promise<{ or
                           </div>
                         )}
                       </td>
+                      <td className="num">{p ? p.booked : "—"}</td>
+                      <td className="num">
+                        {p ? p.pickedUp : "—"}
+                        {notYet > 0 && <div className="to-pick-up small">{notYet} not yet</div>}
+                      </td>
+                      <td className="num">{p ? p.atTerminal : "—"}</td>
                       <td>{formatHouston(snap?.receivingOpensAt)}</td>
                       <td>{formatHouston(snap ? cargoCutoff(snap) : null)}</td>
                       <td className="muted">{b.latest ? formatAgo(b.latest.fetchedAt) : "—"}</td>
@@ -125,5 +149,34 @@ export default async function OrgBookingsPage({ params }: { params: Promise<{ or
         </section>
       )}
     </>
+  );
+}
+
+/** A column header that sorts the list: first tap ascending, second tap descending. */
+function SortHeader({
+  org,
+  column,
+  label,
+  active,
+  dir,
+  numeric,
+}: {
+  org: string;
+  column: SortKey;
+  label: string;
+  active: boolean;
+  dir: SortDir;
+  numeric: boolean;
+}) {
+  const next: SortDir = active && dir === "asc" ? "desc" : "asc";
+  return (
+    <th aria-sort={active ? (dir === "asc" ? "ascending" : "descending") : "none"} className={numeric ? "num" : undefined}>
+      <Link href={`/o/${org}?sort=${column}&dir=${next}`} className={`sort-link${active ? " sort-active" : ""}`} scroll={false}>
+        {label}
+        <span aria-hidden="true" className="sort-arrow">
+          {active ? (dir === "asc" ? "▲" : "▼") : "↕"}
+        </span>
+      </Link>
+    </th>
   );
 }
