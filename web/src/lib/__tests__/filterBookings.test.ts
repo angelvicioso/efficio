@@ -56,3 +56,47 @@ describe("filtering the bookings list (S-047)", () => {
     expect(isFiltered(NO_FILTERS)).toBe(false);
   });
 });
+
+describe("date filters (S-048)", () => {
+  it("turns Houston days into the right instants, including daylight saving", async () => {
+    const { houstonDayStart } = await import("../domain/filterBookings");
+    expect(new Date(houstonDayStart("2026-11-27")).toISOString()).toBe("2026-11-27T06:00:00.000Z"); // CST
+    expect(new Date(houstonDayStart("2026-07-04")).toISOString()).toBe("2026-07-04T05:00:00.000Z"); // CDT
+  });
+
+  it("custom 'To' includes the whole Houston day, not the UTC day", async () => {
+    const { dateWindow } = await import("../domain/filterBookings");
+    const [start, end] = dateWindow(f({ range: "custom", from: "2026-11-27", to: "2026-11-27" }))!;
+    expect(start).toBe(Date.parse("2026-11-27T06:00:00Z"));
+    expect(end).toBe(Date.parse("2026-11-28T06:00:00Z")); // 11:59 PM on Nov 27 in Houston is still inside
+    // Across the November daylight-saving change, the day is 25 hours long
+    const [s2, e2] = dateWindow(f({ range: "custom", from: "2026-11-01", to: "2026-11-01" }))!;
+    expect((e2 - s2) / 3_600_000).toBe(25);
+  });
+
+  it("filters by cutoff, receiving opens or departure, with presets and custom days", async () => {
+    const list = await setup();
+    // Cutoffs relative to now: HOU1003 ~20h, HOU1007 ~3d15h, HOU1002/1006 ~4d3h, HOU1001 6d
+    expect(nums(filterBookings(list, f({ dateField: "cutoff", range: "next24h" })))).toEqual(["HOU1003"]);
+    expect(nums(filterBookings(list, f({ dateField: "cutoff", range: "next7d" })))).toEqual(["HOU1001", "HOU1002", "HOU1003", "HOU1006", "HOU1007"]);
+    // Receiving opened in the past week: everything already open; HOU1001 opens in ~2 days
+    expect(nums(filterBookings(list, f({ dateField: "opens", range: "past7d" })))).toEqual(["HOU1002", "HOU1003", "HOU1006", "HOU1007"]);
+    // Bookings without the date (not at the terminal) are left out while a date filter is on
+    expect(nums(filterBookings(list, f({ dateField: "departs", range: "next14d" })))).not.toContain("NOTYET1");
+  });
+
+  it("custom range with only From or only To is open-ended; empty custom range filters nothing", async () => {
+    const list = await setup();
+    const today = new Date().toISOString().slice(0, 10);
+    expect(filterBookings(list, f({ range: "custom", from: "2000-01-01" })).length).toBe(5);
+    expect(filterBookings(list, f({ range: "custom", to: "2000-01-01" })).length).toBe(0);
+    expect(filterBookings(list, f({ range: "custom" })).length).toBe(6);
+    expect(isFiltered(f({ range: "custom" }))).toBe(false);
+    expect(isFiltered(f({ range: "custom", from: today }))).toBe(true);
+  });
+
+  it("reads date settings from the address safely", () => {
+    expect(parseFilters({ dateField: "opens", range: "custom", from: "2026-11-27", to: "nope" })).toMatchObject({ dateField: "opens", range: "custom", from: "2026-11-27", to: "" });
+    expect(parseFilters({ dateField: "birthday", range: "forever" })).toMatchObject({ dateField: "", range: "" });
+  });
+});

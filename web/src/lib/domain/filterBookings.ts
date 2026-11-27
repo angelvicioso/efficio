@@ -1,7 +1,7 @@
 import type { TrackedBooking } from "@/lib/bookings";
 import { carrierName } from "./carriers";
 import { containerProgress, remainingToDeliver, remainingToPickUp } from "./containers";
-import { receivingStatus, type ReceivingState } from "./status";
+import { cargoCutoff, receivingStatus, type ReceivingState } from "./status";
 import { TERMINAL_LABELS, type Terminal } from "./types";
 
 /** Filters for the bookings list (S-047). All optional; they combine (AND). */
@@ -12,9 +12,80 @@ export interface BookingFilters {
   status: ReceivingState | "";
   terminal: Terminal | "";
   action: "pickup" | "deliver" | "";
+  /** Date filter (S-048): which date, and a preset window or custom Houston-time days. */
+  dateField: DateField | "";
+  range: DateRange | "";
+  from: string;
+  to: string;
 }
 
-export const NO_FILTERS: BookingFilters = { q: "", carrier: "", vessel: "", status: "", terminal: "", action: "" };
+export type DateField = "cutoff" | "opens" | "departs";
+export type DateRange = "next24h" | "next48h" | "next7d" | "next14d" | "past7d" | "custom";
+
+export const DATE_FIELD_LABELS: Record<DateField, string> = { cutoff: "Cargo cutoff", opens: "Receiving opens", departs: "Vessel departs" };
+export const DATE_RANGE_LABELS: Record<DateRange, string> = {
+  next24h: "Next 24 hours",
+  next48h: "Next 48 hours",
+  next7d: "Next 7 days",
+  next14d: "Next 14 days",
+  past7d: "Past 7 days",
+  custom: "Custom dates…",
+};
+
+export const NO_FILTERS: BookingFilters = { q: "", carrier: "", vessel: "", status: "", terminal: "", action: "", dateField: "", range: "", from: "", to: "" };
+
+const HOUSTON = "America/Chicago";
+const HOUR = 3_600_000;
+const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Minutes Houston is behind UTC at a given instant (360 in winter, 300 in summer). */
+function houstonOffsetMinutes(at: number): number {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-US", { timeZone: HOUSTON, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })
+      .formatToParts(new Date(at))
+      .map((p) => [p.type, p.value]),
+  );
+  const asUtc = Date.UTC(+parts.year, +parts.month - 1, +parts.day, +parts.hour, +parts.minute);
+  return Math.round((at - asUtc) / 60_000);
+}
+
+/** The instant a Houston calendar day ("2026-11-27") starts, handling daylight saving. */
+export function houstonDayStart(day: string): number {
+  const [y, m, d] = day.split("-").map(Number);
+  const guess = Date.UTC(y, m - 1, d, 6); // midnight CST
+  return Date.UTC(y, m - 1, d) + houstonOffsetMinutes(guess) * 60_000;
+}
+
+function nextDay(day: string): string {
+  const [y, m, d] = day.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10);
+}
+
+/** The [start, end) window for a date filter, or null if incomplete. */
+export function dateWindow(f: BookingFilters, now: Date = new Date()): [number, number] | null {
+  const t = now.getTime();
+  switch (f.range) {
+    case "next24h":
+      return [t, t + 24 * HOUR];
+    case "next48h":
+      return [t, t + 48 * HOUR];
+    case "next7d":
+      return [t, t + 7 * 24 * HOUR];
+    case "next14d":
+      return [t, t + 14 * 24 * HOUR];
+    case "past7d":
+      return [t - 7 * 24 * HOUR, t];
+    case "custom": {
+      if (!f.from && !f.to) return null;
+      const start = f.from ? houstonDayStart(f.from) : Number.NEGATIVE_INFINITY;
+      // "To" includes that whole Houston day: the window ends when the next day starts.
+      const end = f.to ? houstonDayStart(nextDay(f.to)) : Number.POSITIVE_INFINITY;
+      return [start, end];
+    }
+    default:
+      return null;
+  }
+}
 
 export const STATUS_LABELS: Record<ReceivingState, string> = {
   CLOSING_SOON: "Closing soon",
@@ -37,16 +108,35 @@ export function parseFilters(sp: Record<string, string | undefined>): BookingFil
     status: pick(sp.status, Object.keys(STATUS_LABELS) as ReceivingState[]),
     terminal: pick(sp.terminal, Object.keys(TERMINAL_LABELS) as Terminal[]),
     action: pick(sp.action, ["pickup", "deliver"] as const),
+    dateField: pick(sp.dateField, Object.keys(DATE_FIELD_LABELS) as DateField[]),
+    range: pick(sp.range, Object.keys(DATE_RANGE_LABELS) as DateRange[]),
+    from: DAY_RE.test(sp.from ?? "") ? sp.from! : "",
+    to: DAY_RE.test(sp.to ?? "") ? sp.to! : "",
   };
 }
 
 export function isFiltered(f: BookingFilters): boolean {
-  return Object.values(f).some(Boolean);
+  const { dateField, range, from, to, ...rest } = f;
+  // The date filter only counts once it has a window.
+  return Object.values(rest).some(Boolean) || Boolean(range && (range !== "custom" || from || to));
+}
+
+function dateOf(b: TrackedBooking, field: DateField): number | null {
+  const snap = b.latest?.data;
+  if (!snap?.onFile) return null;
+  const iso = field === "cutoff" ? cargoCutoff(snap) : field === "opens" ? snap.receivingOpensAt : (snap.vesselVisit?.etd ?? null);
+  return iso ? Date.parse(iso) : null;
 }
 
 export function filterBookings(list: TrackedBooking[], f: BookingFilters, now: Date = new Date()): TrackedBooking[] {
   const q = f.q.toUpperCase();
+  const window = dateWindow(f, now);
+  const field: DateField = f.dateField || "cutoff";
   return list.filter((b) => {
+    if (window) {
+      const at = dateOf(b, field);
+      if (at === null || at < window[0] || at >= window[1]) return false;
+    }
     const snap = b.latest?.data ?? null;
     if (q && !b.bookingNumber.includes(q) && !(snap?.vesselVisit?.vesselName ?? "").toUpperCase().includes(q)) return false;
     if (f.carrier && b.carrierCode !== f.carrier) return false;

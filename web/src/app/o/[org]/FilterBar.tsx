@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 
 type Option = [value: string, label: string];
 
@@ -18,12 +18,13 @@ export function FilterBar({
 }: {
   action: string;
   values: Record<string, string>;
-  options: { carriers: Option[]; vessels: Option[]; terminals: Option[]; statuses: Option[]; actions: Option[] };
+  options: { carriers: Option[]; vessels: Option[]; terminals: Option[]; statuses: Option[]; actions: Option[]; dateFields: Option[]; ranges: Option[] };
   sort: string | null;
   dir: string;
   filtered: boolean;
 }) {
   const form = useRef<HTMLFormElement>(null);
+  const [range, setRange] = useState(values.range ?? "");
   const submit = () => form.current?.requestSubmit();
   const select = (name: string, label: string, opts: Option[], all: string) => (
     <label className="filter">
@@ -51,6 +52,45 @@ export function FilterBar({
       {select("status", "Status", options.statuses, "Any status")}
       {options.terminals.length > 1 && select("terminal", "Terminal", options.terminals, "All terminals")}
       {select("action", "Needs action", options.actions, "Anything")}
+      <fieldset className="filter-dates">
+        <legend>Dates</legend>
+        <select name="dateField" defaultValue={values.dateField || "cutoff"} onChange={() => range && submit()} aria-label="Which date">
+          {options.dateFields.map(([v, l]) => (
+            <option key={v} value={v}>
+              {l}
+            </option>
+          ))}
+        </select>
+        <select
+          name="range"
+          value={range}
+          aria-label="When"
+          onChange={(e) => {
+            setRange(e.target.value);
+            // Custom dates wait for the From/To pickers; presets apply right away.
+            if (e.target.value !== "custom") queueMicrotask(submit);
+          }}
+        >
+          <option value="">Any time</option>
+          {options.ranges.map(([v, l]) => (
+            <option key={v} value={v}>
+              {l}
+            </option>
+          ))}
+        </select>
+        {range === "custom" && (
+          <>
+            <label className="date-input">
+              <span>From</span>
+              <input type="date" name="from" defaultValue={values.from ?? ""} onChange={submit} />
+            </label>
+            <label className="date-input">
+              <span>To</span>
+              <input type="date" name="to" defaultValue={values.to ?? ""} onChange={submit} />
+            </label>
+          </>
+        )}
+      </fieldset>
       <div className="filter-buttons">
         <button type="submit" className="secondary small-button">
           Apply

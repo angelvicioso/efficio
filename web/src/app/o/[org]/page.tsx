@@ -16,7 +16,7 @@ import { refreshAllAction } from "./actions";
 import { refreshIntervalMinutes } from "@/lib/scheduler";
 import { containerProgress, remainingToPickUp } from "@/lib/domain/containers";
 import { parseSort, sortBookings, type SortDir, type SortKey } from "@/lib/domain/sortBookings";
-import { ACTION_LABELS, filterBookings, filterOptions, isFiltered, parseFilters, type BookingFilters } from "@/lib/domain/filterBookings";
+import { ACTION_LABELS, DATE_FIELD_LABELS, DATE_RANGE_LABELS, filterBookings, filterOptions, isFiltered, parseFilters, type BookingFilters } from "@/lib/domain/filterBookings";
 import { FilterBar } from "./FilterBar";
 
 export const dynamic = "force-dynamic";
@@ -74,7 +74,7 @@ export default async function OrgBookingsPage({
         <FilterBar
           action={`/o/${org.slug}`}
           values={filters as unknown as Record<string, string>}
-          options={{ ...filterOptions(all), actions: Object.entries(ACTION_LABELS) }}
+          options={{ ...filterOptions(all), actions: Object.entries(ACTION_LABELS), dateFields: Object.entries(DATE_FIELD_LABELS), ranges: Object.entries(DATE_RANGE_LABELS) }}
           sort={sort.key}
           dir={sort.dir}
           filtered={filtered}

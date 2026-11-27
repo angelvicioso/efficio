@@ -317,3 +317,8 @@ textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; 
   .filter select, .filter input, .filter-search input { max-width: none; width: 100%; }
   .filter-search { flex-basis: 100%; }
 }
+.filter-dates { border: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: flex-end; min-width: 0; }
+.filter-dates legend { font-size: 0.78rem; font-weight: 600; color: var(--muted); padding: 0; margin-bottom: 0.2rem; float: left; width: 100%; }
+.filter-dates select, .filter-dates input { font-size: 0.9rem; padding: 0.4rem 0.55rem; }
+.date-input { display: flex; flex-direction: column; gap: 0.1rem; font-size: 0.72rem; color: var(--muted); }
+@media (max-width: 560px) { .filter-dates { flex-basis: 100%; } .filter-dates select { flex: 1 1 45%; } }
