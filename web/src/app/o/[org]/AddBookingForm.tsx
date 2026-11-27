@@ -1,4 +1,5 @@
 import { CARRIERS, carrierName } from "@/lib/domain/carriers";
+import { MAX_BATCH } from "@/lib/bookings";
 import { ActionForm } from "../../ActionForm";
 import { addBookingAction } from "./actions";
 
@@ -7,7 +8,7 @@ export function AddBookingForm({ org, fixedCarrier }: { org: string; fixedCarrie
   return (
     <ActionForm action={addBookingAction} submitLabel="Track" pendingLabel="Checking…" className="add-form">
       <input type="hidden" name="org" value={org} />
-      <label htmlFor="bookingNumber">Track a booking</label>
+      <label htmlFor="bookingNumbers">Track bookings</label>
       <div className="add-fields">
         {fixedCarrier ? (
           <span className="fixed-carrier">{carrierName(fixedCarrier)}</span>
@@ -21,8 +22,20 @@ export function AddBookingForm({ org, fixedCarrier }: { org: string; fixedCarrie
             ))}
           </select>
         )}
-        <input id="bookingNumber" name="bookingNumber" placeholder="Booking number, e.g. HOU1002" autoComplete="off" required />
+        <textarea
+          id="bookingNumbers"
+          name="bookingNumbers"
+          rows={1}
+          placeholder="One or more booking numbers, e.g. HOU1002"
+          autoComplete="off"
+          spellCheck={false}
+          required
+          aria-describedby="bookingNumbers-hint"
+        />
       </div>
+      <p id="bookingNumbers-hint" className="add-hint small muted">
+        Paste a list (one per line, or separated by commas or spaces), up to {MAX_BATCH} at a time.
+      </p>
     </ActionForm>
   );
 }

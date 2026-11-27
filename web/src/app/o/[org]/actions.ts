@@ -5,9 +5,9 @@ import { redirect } from "next/navigation";
 import { AccountError, type OrgRole } from "@/lib/auth/accounts";
 import { canManageOrgSettings } from "@/lib/auth/permissions";
 import { baseUrl, requireOrgAccess, requireTeamManager } from "@/lib/auth/session";
-import { BookingError } from "@/lib/bookings";
+import { BookingError, type BatchResult } from "@/lib/bookings";
 import { accountService, bookingService } from "@/lib/service";
-import type { FormState } from "../../ActionForm";
+import type { FormState, ResultGroup } from "../../ActionForm";
 
 /**
  * Every action re-checks access from the org slug in the form, and every
@@ -25,24 +25,51 @@ function fail(e: unknown): FormState {
 
 // ---------- Bookings ----------
 
+/** Track one or many bookings (S-046). One number that works opens its page; otherwise a summary. */
 export async function addBookingAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const { user, org } = await requireOrgAccess(slugOf(formData));
-  let id: number;
+  // Carrier organizations can only add their own bookings.
+  const carrierCode = org.carrierCode ?? String(formData.get("carrierCode") ?? "");
+  let results: BatchResult[];
   try {
-    ({ id } = await bookingService().add(
-      org,
-      {
-        // Carrier organizations can only add their own bookings.
-        carrierCode: org.carrierCode ?? String(formData.get("carrierCode") ?? ""),
-        bookingNumber: String(formData.get("bookingNumber") ?? ""),
-      },
-      user.id,
-    ));
+    results = await bookingService().addMany(org, { carrierCode, text: String(formData.get("bookingNumbers") ?? "") }, user.id);
   } catch (e) {
     return fail(e);
   }
-  revalidatePath(`/o/${org.slug}`);
-  redirect(`/o/${org.slug}/bookings/${id}`);
+  revalidatePath(`/o/${org.slug}`, "layout");
+  const only = results.length === 1 ? results[0] : null;
+  if (only && (only.outcome === "added" || only.outcome === "already")) redirect(`/o/${org.slug}/bookings/${only.id}`);
+  if (only) return { error: only.note ?? "Couldn't add this booking." };
+  return { groups: summarizeBatch(org.slug, results) };
+}
+
+function summarizeBatch(slug: string, results: BatchResult[]): ResultGroup[] {
+  const of = (o: BatchResult["outcome"]) => results.filter((r) => r.outcome === o);
+  const link = (r: BatchResult) => ({ label: r.bookingNumber, href: r.id ? `/o/${slug}/bookings/${r.id}` : undefined });
+  const groups: ResultGroup[] = [];
+  const added = of("added");
+  if (added.length) groups.push({ tone: "ok", title: `✓ ${added.length} now tracked`, items: added.map(link) });
+  const already = of("already");
+  if (already.length) groups.push({ tone: "info", title: `• ${already.length} already tracked`, items: already.map(link) });
+  const needs = of("needs_carrier");
+  if (needs.length) {
+    groups.push({
+      tone: "warn",
+      title: `? ${needs.length} need a carrier`,
+      items: needs.map((r) => ({ label: r.bookingNumber })),
+      hint: "The terminal doesn't have these yet (or the number exists under several carriers). Choose the carrier above, then paste these again.",
+      copy: needs.map((r) => r.bookingNumber).join("\n"),
+    });
+  }
+  const invalid = of("invalid");
+  if (invalid.length) {
+    groups.push({ tone: "error", title: `✗ ${invalid.length} not ${invalid.length === 1 ? "a valid booking number" : "valid booking numbers"}`, items: invalid.map((r) => ({ label: r.bookingNumber })), hint: "Booking numbers are 4 to 30 letters, digits or dashes." });
+  }
+  const errors = of("error");
+  if (errors.length) {
+    groups.push({ tone: "error", title: `✗ ${errors.length} couldn't be added`, items: errors.map((r) => ({ label: r.bookingNumber })), hint: errors[0].note, copy: errors.map((r) => r.bookingNumber).join("\n") });
+  }
+  return groups;
 }
 
 export async function refreshBookingAction(formData: FormData): Promise<void> {

@@ -34,7 +34,7 @@ Either run `npm run demo:seed` for ready-made demo logins (below), or open the a
 
 ### Shared bookings (P-001)
 - A booking is identified by **carrier + booking number** and is shared by every company that follows it.
-- Exporters just enter the booking number; Efficio finds the carrier at the port and asks only if it can't tell (D-033). They're attached as **claimed**.
+- Exporters just enter the booking number, or paste a list of up to 50 (one per line, or separated by commas or spaces); Efficio finds each carrier at the port and asks only if it can't tell (D-033, D-035). They're attached as **claimed**.
 - An **ocean carrier** organization (created with its carrier code) automatically sees every booking under that code, and can **verify** or **remove** the companies on it.
 - Companies never see each other on a booking, and only see its history from when they joined. Only the carrier sees the full list.
 

@@ -221,3 +221,40 @@ describe("MockPortHoustonAdapter", () => {
     expect(diffSnapshots(a, b)).toEqual([]);
   });
 });
+
+describe("adding many bookings at once (S-046)", () => {
+  it("reads numbers separated by new lines, commas, semicolons, spaces or tabs, without duplicates", async () => {
+    const { parseBookingNumbers } = await import("../bookings");
+    expect(parseBookingNumbers("HOU1002\nhou1003, HOU1006;HOU1007\tHOU1002  \n\n")).toEqual(["HOU1002", "HOU1003", "HOU1006", "HOU1007"]);
+    expect(parseBookingNumbers(" , ;\n")).toEqual([]);
+  });
+
+  it("adds each number and reports what happened to every one", async () => {
+    const { s, acme } = setup();
+    await s.add(acme, M("HOU1002"));
+    const results = await s.addMany(acme, { carrierCode: "", text: "HOU1002\nHOU1003, HOU1006 NOTYET99 ab" });
+    expect(results.map((r) => [r.bookingNumber, r.outcome])).toEqual([
+      ["HOU1002", "already"],
+      ["HOU1003", "added"],
+      ["HOU1006", "added"],
+      ["NOTYET99", "needs_carrier"],
+      ["AB", "invalid"],
+    ]);
+    expect(results.find((r) => r.bookingNumber === "HOU1003")!.carrierCode).toBe("HLCU");
+    expect(s.list(acme)).toHaveLength(3);
+  });
+
+  it("uses a chosen carrier for every number in the batch", async () => {
+    const { s, acme } = setup();
+    const results = await s.addMany(acme, { carrierCode: "MSCU", text: "NOTYET1, NOTYET2" });
+    expect(results.map((r) => r.outcome)).toEqual(["added", "added"]);
+    expect(s.list(acme).every((b) => b.carrierCode === "MSCU")).toBe(true);
+  });
+
+  it("refuses an empty box and more than 50 at a time", async () => {
+    const { s, acme } = setup();
+    await expect(s.addMany(acme, { carrierCode: "", text: "  ,  " })).rejects.toThrow(/at least one/);
+    const many = Array.from({ length: 51 }, (_, i) => `BK${1000 + i}`).join(",");
+    await expect(s.addMany(acme, { carrierCode: "MAEU", text: many })).rejects.toThrow(/up to 50/);
+  });
+});

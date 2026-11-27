@@ -78,11 +78,49 @@ export interface Party {
   addedAt: string;
 }
 
+/** Why adding a booking failed, so a batch can group the results (S-046). */
+export type BookingErrorCode =
+  | "invalid_number"
+  | "invalid_carrier"
+  | "needs_carrier"
+  | "port_unreachable"
+  | "not_allowed"
+  | "not_found";
+
 export class BookingError extends Error {
-  constructor(message: string) {
+  constructor(
+    message: string,
+    readonly code: BookingErrorCode = "not_allowed",
+  ) {
     super(message);
     this.name = "BookingError";
   }
+}
+
+/** Most booking numbers one batch may add (each costs a few port lookups; R-018). */
+export const MAX_BATCH = 50;
+
+/**
+ * Splits pasted text into booking numbers: commas, semicolons, spaces, tabs or new lines all work
+ * (an Excel column, an email list, or one number). Normalized and de-duplicated, in order.
+ */
+export function parseBookingNumbers(text: string): string[] {
+  const seen = new Set<string>();
+  for (const part of text.split(/[\s,;]+/)) {
+    const n = normalizeBookingNumber(part);
+    if (n) seen.add(n);
+  }
+  return [...seen];
+}
+
+export type BatchOutcome = "added" | "already" | "needs_carrier" | "invalid" | "error";
+
+export interface BatchResult {
+  bookingNumber: string;
+  outcome: BatchOutcome;
+  id?: number;
+  carrierCode?: string;
+  note?: string;
 }
 
 /** Bookings stop auto-refreshing this long after their vessel's departure. */
@@ -139,11 +177,11 @@ export class BookingService {
   ): Promise<{ id: number; created: boolean }> {
     const bookingNumber = normalizeBookingNumber(input.bookingNumber);
     if (!BOOKING_NUMBER.test(bookingNumber)) {
-      throw new BookingError("Booking numbers should be 4 to 30 letters, digits or dashes.");
+      throw new BookingError("Booking numbers should be 4 to 30 letters, digits or dashes.", "invalid_number");
     }
     // No carrier chosen: find it at the port (D-033).
     const carrierCode = input.carrierCode.trim() ? input.carrierCode.trim().toUpperCase() : await this.detectCarrier(bookingNumber);
-    if (!SCAC.test(carrierCode)) throw new BookingError("Choose the carrier that issued this booking.");
+    if (!SCAC.test(carrierCode)) throw new BookingError("Choose the carrier that issued this booking.", "invalid_carrier");
     if (viewer.type === "ocean_carrier" && viewer.carrierCode !== carrierCode) {
       throw new BookingError("Carriers can only add their own bookings.");
     }
@@ -181,21 +219,54 @@ export class BookingService {
     return { id: booking.id, created };
   }
 
+  /**
+   * Adds many bookings at once (S-046), one after another so the port isn't flooded.
+   * Never throws for a single number: each gets an outcome for the summary.
+   */
+  async addMany(viewer: Viewer, input: { carrierCode: string; text: string }, addedBy: number | null = null): Promise<BatchResult[]> {
+    const numbers = parseBookingNumbers(input.text);
+    if (numbers.length === 0) throw new BookingError("Enter at least one booking number.", "invalid_number");
+    if (numbers.length > MAX_BATCH) {
+      throw new BookingError(`That's ${numbers.length} booking numbers. Please add up to ${MAX_BATCH} at a time.`, "invalid_number");
+    }
+    const results: BatchResult[] = [];
+    for (const bookingNumber of numbers) {
+      try {
+        const { id, created } = await this.add(viewer, { carrierCode: input.carrierCode, bookingNumber }, addedBy);
+        const carrierCode = (this.db.prepare("SELECT carrier_code FROM bookings WHERE id = ?").get(id) as { carrier_code: string }).carrier_code;
+        results.push({ bookingNumber, outcome: created ? "added" : "already", id, carrierCode });
+      } catch (e) {
+        if (!(e instanceof BookingError)) {
+          results.push({ bookingNumber, outcome: "error", note: "Something went wrong." });
+          continue;
+        }
+        const outcome: BatchOutcome =
+          e.code === "needs_carrier" ? "needs_carrier" : e.code === "invalid_number" ? "invalid" : "error";
+        results.push({ bookingNumber, outcome, note: e.message });
+      }
+    }
+    return results;
+  }
+
   /** The one carrier the port has this booking number under, or a clear reason to ask the user. */
   private async detectCarrier(bookingNumber: string): Promise<string> {
     let found: string[];
     try {
       found = await this.adapter.findCarriers(bookingNumber);
     } catch {
-      throw new BookingError("Couldn't reach the port to find the carrier. Choose the carrier and try again.");
+      throw new BookingError("Couldn't reach the port to find the carrier. Choose the carrier and try again.", "port_unreachable");
     }
     if (found.length === 1) return found[0];
     if (found.length === 0) {
       throw new BookingError(
         "The terminal doesn't have this booking yet, so Efficio can't tell its carrier. Choose the carrier to start tracking it anyway.",
+        "needs_carrier",
       );
     }
-    throw new BookingError(`This booking number exists under more than one carrier (${found.map(carrierName).join(", ")}). Choose the carrier.`);
+    throw new BookingError(
+      `This booking number exists under more than one carrier (${found.map(carrierName).join(", ")}). Choose the carrier.`,
+      "needs_carrier",
+    );
   }
 
   /** How the viewer can see this booking, or null if it can't. */
@@ -229,7 +300,7 @@ export class BookingService {
 
   /** S-012: refresh port data for a booking the viewer can see. */
   async refresh(viewer: Viewer, id: number): Promise<StoredSnapshot> {
-    if (!this.access(viewer, id)) throw new BookingError("Booking not found.");
+    if (!this.access(viewer, id)) throw new BookingError("Booking not found.", "not_found");
     return this.fetch(id);
   }
 
@@ -360,7 +431,7 @@ export class BookingService {
   /** Fetch port data and store it as a new snapshot (errors are stored too). */
   private async fetch(id: number): Promise<StoredSnapshot> {
     const row = this.db.prepare("SELECT * FROM bookings WHERE id = ?").get(id) as BookingRow | undefined;
-    if (!row) throw new BookingError("Booking not found.");
+    if (!row) throw new BookingError("Booking not found.", "not_found");
     let data: PortBookingSnapshot | null = null;
     let error: string | null = null;
     try {

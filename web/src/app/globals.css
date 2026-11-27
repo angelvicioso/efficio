@@ -280,3 +280,25 @@ td.num .to-pick-up { white-space: nowrap; }
 .carrier-link-compact { font-size: 0.78rem; font-weight: 500; }
 .hero-actions .carrier-link { font-size: 0.9rem; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* ---------- Batch add ---------- */
+textarea {
+  flex: 1; min-width: 0; font: inherit; padding: 0.55rem 0.75rem; border-radius: 8px; resize: vertical;
+  border: 1px solid var(--border); background: var(--bg); color: var(--text); min-height: 2.6rem; field-sizing: content; max-height: 14rem;
+}
+textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.add-form { align-items: start; }
+.add-form > button { align-self: start; }
+.add-hint { grid-column: 1 / -1; margin: 0; }
+.result-groups { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.25rem; }
+.result-group { border-radius: 8px; padding: 0.6rem 0.8rem; }
+.result-title { font-weight: 700; }
+.result-items { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85rem; margin-top: 0.2rem; overflow-wrap: anywhere; }
+.result-hint { margin-top: 0.3rem; }
+.result-ok { background: var(--green-bg); color: var(--green-fg); }
+.result-info { background: var(--grey-bg); color: var(--grey-fg); }
+.result-warn { background: var(--amber-bg); color: var(--amber-fg); }
+.result-error { background: var(--red-bg); color: var(--red-fg); }
+.result-group a { color: inherit; }
+.result-group .link-button { color: inherit; margin-top: 0.3rem; }
+.add-fields { align-items: flex-start; }
