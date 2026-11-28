@@ -1,0 +1,102 @@
+import { describe, expect, it } from "vitest";
+import type { TrackedBooking } from "../bookings";
+import type { PortBookingSnapshot, Container } from "../domain/types";
+import { attentionRank, bookingExceptions, exceptionSummary, worstSeverity } from "../domain/exceptions";
+
+const now = new Date("2026-12-01T12:00:00Z");
+const H = 3_600_000;
+const at = (offsetH: number) => new Date(now.getTime() + offsetH * H).toISOString();
+
+function booking(o: {
+  cutoffInH?: number | null;
+  booked?: number;
+  pickedUp?: number;
+  delivered?: number;
+  etdInH?: number | null;
+  prevCutoffInH?: number;
+  onFile?: boolean;
+  error?: boolean;
+}): TrackedBooking {
+  const containers: Container[] = Array.from({ length: o.pickedUp ?? 0 }, (_, i) => ({
+    number: `TEST${String(i).padStart(7, "0")}`,
+    sizeType: "45G1",
+    stage: i < (o.delivered ?? 0) ? "FULL_AT_TERMINAL" : "EMPTY_PICKED_UP",
+    emptyPickedUpAt: at(-48),
+    fullGateInAt: null,
+    loadedAt: null,
+  }));
+  const snap = (cutoffH: number | null | undefined): PortBookingSnapshot => ({
+    source: "test",
+    bookingNumber: "B1",
+    onFile: o.onFile ?? true,
+    terminal: "BAYPORT",
+    carrierCode: "MAEU",
+    vesselVisit: { id: "V1", vesselName: "SHIP", voyage: "1", eta: null, etd: o.etdInH === null ? null : at(o.etdInH ?? 72) },
+    receivingOpensAt: at(-72),
+    cutoffs: cutoffH === null || cutoffH === undefined ? [] : [{ kind: "cargo", at: at(cutoffH), setBy: "terminal" }],
+    equipment: [{ sizeType: "45G1", quantity: o.booked ?? 0 }],
+    containers,
+    raw: null,
+    fetchedAt: now.toISOString(),
+  });
+  return {
+    id: 1,
+    carrierCode: "MAEU",
+    bookingNumber: "B1",
+    createdAt: at(-100),
+    access: { role: "exporter", status: "claimed", via: "party", since: null },
+    latest: { id: 2, fetchedAt: now.toISOString(), source: "test", data: o.error ? null : snap(o.cutoffInH), error: o.error ? "port down" : null },
+    previous: o.prevCutoffInH === undefined ? null : { id: 1, fetchedAt: at(-1), source: "test", data: snap(o.prevCutoffInH), error: null },
+  };
+}
+const kinds = (b: TrackedBooking) => bookingExceptions(b, now).map((e) => e.kind);
+
+describe("exceptions (S-049): 1 day before cutoff", () => {
+  it("flags empties not picked up and containers not delivered within 24h of cutoff, with specifics", () => {
+    const e = bookingExceptions(booking({ cutoffInH: 18, booked: 6, pickedUp: 4, delivered: 1 }), now);
+    expect(e).toEqual([
+      { kind: "EMPTIES_NOT_PICKED_UP", severity: "critical", title: "2 of 6 empties not picked up", detail: "cutoff in 18h" },
+      { kind: "NOT_DELIVERED", severity: "critical", title: "5 of 6 not delivered to the terminal", detail: "cutoff in 18h" },
+    ]);
+  });
+
+  it("stays quiet more than 24h before cutoff, and when everything is delivered", () => {
+    expect(kinds(booking({ cutoffInH: 30, booked: 6, pickedUp: 0 }))).toEqual([]);
+    expect(kinds(booking({ cutoffInH: 5, booked: 2, pickedUp: 2, delivered: 2 }))).toEqual([]);
+  });
+
+  it("only flags what's actually missing", () => {
+    expect(kinds(booking({ cutoffInH: 10, booked: 3, pickedUp: 3, delivered: 1 }))).toEqual(["NOT_DELIVERED"]);
+  });
+
+  it("flags a passed cutoff with containers missing, until the vessel sails", () => {
+    const e = bookingExceptions(booking({ cutoffInH: -5, booked: 5, pickedUp: 5, delivered: 4, etdInH: 20 }), now)[0];
+    expect(e).toMatchObject({ kind: "CUTOFF_PASSED_NOT_DELIVERED", title: "1 of 5 missed the cargo cutoff", detail: "cutoff was 5h ago; risk of being rolled" });
+    expect(kinds(booking({ cutoffInH: -30, booked: 5, pickedUp: 5, delivered: 4, etdInH: -2 }))).toEqual([]); // vessel already sailed
+  });
+
+  it("warns when the cutoff moved earlier", () => {
+    const e = bookingExceptions(booking({ cutoffInH: 60, prevCutoffInH: 72, booked: 0 }), now);
+    expect(e).toEqual([{ kind: "CUTOFF_MOVED_EARLIER", severity: "warning", title: "Cutoff moved 12h earlier", detail: "now in 2d 12h" }]);
+    expect(kinds(booking({ cutoffInH: 72, prevCutoffInH: 60, booked: 0 }))).toEqual([]); // moved later: fine
+  });
+
+  it("warns when the port couldn't be reached; ignores bookings not at the terminal", () => {
+    expect(kinds(booking({ error: true }))).toEqual(["NO_UPDATE"]);
+    expect(kinds(booking({ onFile: false, cutoffInH: 5, booked: 3 }))).toEqual([]);
+  });
+
+  it("summarizes, ranks critical first, and reports the worst severity", () => {
+    const critical = booking({ cutoffInH: 10, booked: 2, pickedUp: 0 });
+    const warning = booking({ error: true });
+    const fine = booking({ cutoffInH: 100, booked: 2 });
+    expect(exceptionSummary([critical, warning, fine], now)).toEqual([
+      { kind: "EMPTIES_NOT_PICKED_UP", count: 1 },
+      { kind: "NOT_DELIVERED", count: 1 },
+      { kind: "NO_UPDATE", count: 1 },
+    ]);
+    expect(attentionRank(critical, now)).toBeLessThan(attentionRank(warning, now));
+    expect(attentionRank(warning, now)).toBeLessThan(attentionRank(fine, now));
+    expect(worstSeverity(bookingExceptions(warning, now))).toBe("warning");
+  });
+});

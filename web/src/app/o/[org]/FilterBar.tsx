@@ -18,7 +18,7 @@ export function FilterBar({
 }: {
   action: string;
   values: Record<string, string>;
-  options: { carriers: Option[]; vessels: Option[]; terminals: Option[]; statuses: Option[]; actions: Option[]; dateFields: Option[]; ranges: Option[] };
+  options: { carriers: Option[]; vessels: Option[]; terminals: Option[]; statuses: Option[]; actions: Option[]; exceptions: Option[]; dateFields: Option[]; ranges: Option[] };
   sort: string | null;
   dir: string;
   filtered: boolean;
@@ -51,7 +51,8 @@ export function FilterBar({
       {select("vessel", "Vessel", options.vessels, "All vessels")}
       {select("status", "Status", options.statuses, "Any status")}
       {options.terminals.length > 1 && select("terminal", "Terminal", options.terminals, "All terminals")}
-      {select("action", "Needs action", options.actions, "Anything")}
+      {select("exception", "Exceptions", options.exceptions, "Show all")}
+      {select("action", "Containers", options.actions, "Any")}
       <fieldset className="filter-dates">
         <legend>Dates</legend>
         <select name="dateField" defaultValue={values.dateField || "cutoff"} onChange={() => range && submit()} aria-label="Which date">

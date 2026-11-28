@@ -28,7 +28,7 @@ describe("ISO 6346 container numbers", () => {
 describe("container progress", () => {
   it("counts cumulatively: loaded containers were also picked up and delivered", async () => {
     const snap = await new MockPortHoustonAdapter().lookupBooking({ carrierCode: "CMDU", bookingNumber: "HOU1004" });
-    expect(containerProgress(snap)).toEqual({ booked: 5, pickedUp: 5, atTerminal: 5, loaded: 3 });
+    expect(containerProgress(snap)).toEqual({ booked: 5, pickedUp: 5, atTerminal: 4, loaded: 3 }); // one missed the cutoff (demo)
   });
 
   it("reports what's left to deliver", async () => {

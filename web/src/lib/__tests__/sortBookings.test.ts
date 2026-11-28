@@ -9,7 +9,7 @@ async function setup() {
   const db = openDb(":memory:");
   const acme = new AccountService(db).createOrganization({ name: "Acme Exports", type: "exporter" });
   const s = new BookingService(db, new MockPortHoustonAdapter());
-  // HOU1002: 4 booked/4 picked/2 in · HOU1006: 6/3/1 · HOU1007: 3/3/3 · HOU1003: 2/2/1 · NOTYET1: not on file
+  // HOU1002: 4 booked/4 picked/2 in · HOU1006: 6/3/1 · HOU1007: 3/3/3 · HOU1003: 3/2/1 · NOTYET1: not on file
   for (const [c, n] of [["MAEU", "HOU1002"], ["MAEU", "HOU1006"], ["MSCU", "HOU1007"], ["HLCU", "HOU1003"], ["MSCU", "NOTYET1"]]) {
     await s.add(acme, { carrierCode: c, bookingNumber: n });
   }
@@ -20,7 +20,8 @@ const nums = (list: { bookingNumber: string }[]) => list.map((b) => b.bookingNum
 describe("sorting the bookings list", () => {
   it("sorts by containers, picked up and at terminal, either direction, missing values last", async () => {
     const list = await setup();
-    expect(nums(sortBookings(list, "containers", "desc"))).toEqual(["HOU1006", "HOU1002", "HOU1007", "HOU1003", "NOTYET1"]);
+    // HOU1003 and HOU1007 tie at 3: ties keep the list's normal order (newest first)
+    expect(nums(sortBookings(list, "containers", "desc"))).toEqual(["HOU1006", "HOU1002", "HOU1003", "HOU1007", "NOTYET1"]);
     expect(nums(sortBookings(list, "containers", "asc"))).toEqual(["HOU1003", "HOU1007", "HOU1002", "HOU1006", "NOTYET1"]);
     // HOU1006 and HOU1003 tie at 1: ties keep the list's normal order (newest first)
     expect(nums(sortBookings(list, "atTerminal", "desc"))).toEqual(["HOU1007", "HOU1002", "HOU1003", "HOU1006", "NOTYET1"]);

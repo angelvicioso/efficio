@@ -2,6 +2,7 @@ import type { TrackedBooking } from "@/lib/bookings";
 import { carrierName } from "./carriers";
 import { containerProgress, remainingToDeliver, remainingToPickUp } from "./containers";
 import { cargoCutoff, receivingStatus, type ReceivingState } from "./status";
+import { bookingExceptions, EXCEPTION_KINDS, type ExceptionKind } from "./exceptions";
 import { TERMINAL_LABELS, type Terminal } from "./types";
 
 /** Filters for the bookings list (S-047). All optional; they combine (AND). */
@@ -12,6 +13,8 @@ export interface BookingFilters {
   status: ReceivingState | "";
   terminal: Terminal | "";
   action: "pickup" | "deliver" | "";
+  /** Exceptions (S-049): a specific kind, or "any". */
+  exception: ExceptionKind | "any" | "";
   /** Date filter (S-048): which date, and a preset window or custom Houston-time days. */
   dateField: DateField | "";
   range: DateRange | "";
@@ -32,7 +35,7 @@ export const DATE_RANGE_LABELS: Record<DateRange, string> = {
   custom: "Custom dates…",
 };
 
-export const NO_FILTERS: BookingFilters = { q: "", carrier: "", vessel: "", status: "", terminal: "", action: "", dateField: "", range: "", from: "", to: "" };
+export const NO_FILTERS: BookingFilters = { q: "", carrier: "", vessel: "", status: "", terminal: "", action: "", exception: "", dateField: "", range: "", from: "", to: "" };
 
 const HOUSTON = "America/Chicago";
 const HOUR = 3_600_000;
@@ -108,6 +111,7 @@ export function parseFilters(sp: Record<string, string | undefined>): BookingFil
     status: pick(sp.status, Object.keys(STATUS_LABELS) as ReceivingState[]),
     terminal: pick(sp.terminal, Object.keys(TERMINAL_LABELS) as Terminal[]),
     action: pick(sp.action, ["pickup", "deliver"] as const),
+    exception: pick(sp.exception, ["any", ...EXCEPTION_KINDS] as const),
     dateField: pick(sp.dateField, Object.keys(DATE_FIELD_LABELS) as DateField[]),
     range: pick(sp.range, Object.keys(DATE_RANGE_LABELS) as DateRange[]),
     from: DAY_RE.test(sp.from ?? "") ? sp.from! : "",
@@ -143,6 +147,10 @@ export function filterBookings(list: TrackedBooking[], f: BookingFilters, now: D
     if (f.vessel && snap?.vesselVisit?.id !== f.vessel) return false;
     if (f.terminal && snap?.terminal !== f.terminal) return false;
     if (f.status && (!snap || receivingStatus(snap, now).state !== f.status)) return false;
+    if (f.exception) {
+      const kinds = bookingExceptions(b, now).map((e) => e.kind);
+      if (f.exception === "any" ? kinds.length === 0 : !kinds.includes(f.exception)) return false;
+    }
     if (f.action) {
       if (!snap?.onFile) return false;
       const p = containerProgress(snap);

@@ -10,6 +10,8 @@ import { StatusBadge } from "../../../../StatusBadge";
 import { refreshBookingAction, removeBookingAction, removePartyAction, verifyPartyAction } from "../../actions";
 import { AccessBadge } from "../../../../AccessBadge";
 import { CarrierTrackingLink } from "../../../../CarrierTrackingLink";
+import { ExceptionList } from "../../../../ExceptionList";
+import { bookingExceptions, worstSeverity } from "@/lib/domain/exceptions";
 import { PARTY_ROLE_LABELS } from "@/lib/bookings";
 import { carrierName } from "@/lib/domain/carriers";
 import { ContainerCounts, ContainerTable } from "../../BookingGroups";
@@ -61,6 +63,17 @@ export default async function BookingPage({ params }: { params: Promise<{ org: s
           </form>
         </div>
       </section>
+
+      {(() => {
+        const ex = bookingExceptions(booking);
+        const sev = worstSeverity(ex);
+        return sev ? (
+          <section className={`card attention-box attention-box-${sev}`} aria-label="Needs attention">
+            <h2>Needs attention</h2>
+            <ExceptionList items={ex} />
+          </section>
+        ) : null;
+      })()}
 
       {latest?.error && (
         <div className="callout callout-error" role="alert">

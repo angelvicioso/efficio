@@ -2,9 +2,10 @@ import type { TrackedBooking } from "@/lib/bookings";
 import { carrierName } from "./carriers";
 import { containerProgress } from "./containers";
 import { cargoCutoff, receivingStatus, type ReceivingState } from "./status";
+import { attentionRank } from "./exceptions";
 
 /** Sortable columns on the bookings list. */
-export const SORT_KEYS = ["booking", "carrier", "status", "opens", "cutoff", "containers", "pickedUp", "atTerminal", "updated"] as const;
+export const SORT_KEYS = ["attention", "booking", "carrier", "status", "opens", "cutoff", "containers", "pickedUp", "atTerminal", "updated"] as const;
 export type SortKey = (typeof SORT_KEYS)[number];
 export type SortDir = "asc" | "desc";
 
@@ -29,6 +30,8 @@ function valueOf(b: TrackedBooking, key: SortKey, now: Date): Value {
   const snap = b.latest?.data ?? null;
   const time = (iso: string | null | undefined) => (iso ? Date.parse(iso) : null);
   switch (key) {
+    case "attention":
+      return attentionRank(b, now);
     case "booking":
       return b.bookingNumber;
     case "carrier":

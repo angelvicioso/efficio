@@ -35,8 +35,8 @@ describe("filtering the bookings list (S-047)", () => {
 
   it("finds bookings that need action", async () => {
     const list = await setup();
-    // Empties still to pick up: HOU1006 (6 booked, 3 out), HOU1001 (3 booked, 1 out)
-    expect(nums(filterBookings(list, f({ action: "pickup" })))).toEqual(["HOU1001", "HOU1006"]);
+    // Empties still to pick up: HOU1006 (6 booked, 3 out), HOU1001 (3 booked, 1 out), HOU1003 (3 booked, 2 out)
+    expect(nums(filterBookings(list, f({ action: "pickup" })))).toEqual(["HOU1001", "HOU1003", "HOU1006"]);
     // Still to deliver: everything on file except HOU1007 (3 of 3 delivered)
     expect(nums(filterBookings(list, f({ action: "deliver" })))).toEqual(["HOU1001", "HOU1002", "HOU1003", "HOU1006"]);
   });

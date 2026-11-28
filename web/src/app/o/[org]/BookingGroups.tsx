@@ -9,6 +9,8 @@ import { formatHouston } from "@/lib/format";
 import { AccessBadge } from "../../AccessBadge";
 import { StatusBadge } from "../../StatusBadge";
 import { CarrierTrackingLink } from "../../CarrierTrackingLink";
+import { ExceptionList } from "../../ExceptionList";
+import { bookingExceptions, worstSeverity } from "@/lib/domain/exceptions";
 
 /** Shared pieces of the Vessels and Carriers views: group header, bookings, containers. */
 
@@ -76,8 +78,15 @@ export function BarLegend() {
 
 /** Group header line: N bookings, container counts, next cutoff. */
 export function GroupStats({ g }: { g: GroupSummary }) {
+  const flagged = g.bookings.map((b) => worstSeverity(bookingExceptions(b))).filter(Boolean);
+  const critical = flagged.includes("critical");
   return (
     <div className="group-stats">
+      {flagged.length > 0 && (
+        <div className={`group-attention attention-${critical ? "critical" : "warning"}`}>
+          {critical ? "●" : "▲"} {flagged.length} {flagged.length === 1 ? "booking needs" : "bookings need"} attention
+        </div>
+      )}
       <div className="group-count">
         {plural(g.bookings.length, "booking")}
         <span className="muted small"> · {stateSummary(g.stateCounts)}</span>
@@ -108,8 +117,9 @@ export function BookingList({
       {bookings.map((b) => {
         const snap = b.latest?.data ?? null;
         const p = containerProgress(snap);
+        const sev = worstSeverity(bookingExceptions(b));
         return (
-          <details key={b.id} className="booking-item">
+          <details key={b.id} className={`booking-item${sev ? ` item-${sev}` : ""}`}>
             <summary>
               <span className="bi-main">
                 <span className="booking-link-text">{b.bookingNumber}</span>
@@ -129,6 +139,7 @@ export function BookingList({
               </span>
             </summary>
             <div className="booking-detail">
+              <ExceptionList items={bookingExceptions(b)} />
               <div className="bd-top">
                 <AccessBadge access={b.access} />
                 <span className="small muted">

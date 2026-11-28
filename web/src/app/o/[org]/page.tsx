@@ -18,6 +18,9 @@ import { containerProgress, remainingToPickUp } from "@/lib/domain/containers";
 import { parseSort, sortBookings, type SortDir, type SortKey } from "@/lib/domain/sortBookings";
 import { ACTION_LABELS, DATE_FIELD_LABELS, DATE_RANGE_LABELS, filterBookings, filterOptions, isFiltered, parseFilters, type BookingFilters } from "@/lib/domain/filterBookings";
 import { FilterBar } from "./FilterBar";
+import { AttentionPanel } from "./AttentionPanel";
+import { ExceptionList } from "../../ExceptionList";
+import { bookingExceptions, EXCEPTION_LABELS, exceptionSummary, worstSeverity } from "@/lib/domain/exceptions";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +34,9 @@ export default async function OrgBookingsPage({
   const { org: slug } = await params;
   const { org } = await requireOrgAccess(slug);
   const sp = await searchParams;
-  const sort = parseSort(sp.sort, sp.dir);
+  // Default order: most urgent first, so exceptions are always at the top (S-049).
+  const parsed = parseSort(sp.sort, sp.dir);
+  const sort = parsed.key ? parsed : { key: "attention" as const, dir: "asc" as const };
   const filters = parseFilters(sp);
   const all = bookingService().list(org);
   const bookings = sortBookings(filterBookings(all, filters), sort.key, sort.dir);
@@ -70,11 +75,19 @@ export default async function OrgBookingsPage({
         </p>
       )}
 
+      {all.length > 0 && <AttentionPanel org={org.slug} summary={exceptionSummary(all)} active={filters.exception} />}
+
       {all.length > 0 && (
         <FilterBar
           action={`/o/${org.slug}`}
           values={filters as unknown as Record<string, string>}
-          options={{ ...filterOptions(all), actions: Object.entries(ACTION_LABELS), dateFields: Object.entries(DATE_FIELD_LABELS), ranges: Object.entries(DATE_RANGE_LABELS) }}
+          options={{
+            ...filterOptions(all),
+            actions: Object.entries(ACTION_LABELS),
+            exceptions: [["any", "Any exception"], ...Object.entries(EXCEPTION_LABELS).map(([k, v]) => [k, v.label] as [string, string])],
+            dateFields: Object.entries(DATE_FIELD_LABELS),
+            ranges: Object.entries(DATE_RANGE_LABELS),
+          }}
           sort={sort.key}
           dir={sort.dir}
           filtered={filtered}
@@ -109,6 +122,7 @@ export default async function OrgBookingsPage({
             <table className="bookings-table">
               <thead>
                 <tr>
+                  {header("attention", "Attention")}
                   {header("booking", "Booking")}
                   {header("carrier", "Carrier")}
                   {header("status", "Status")}
@@ -126,8 +140,13 @@ export default async function OrgBookingsPage({
                   const changes = snap && b.previous?.data ? diffSnapshots(b.previous.data, snap) : [];
                   const p = snap?.onFile ? containerProgress(snap) : null;
                   const notYet = p ? remainingToPickUp(p) : 0;
+                  const exceptions = bookingExceptions(b);
+                  const severity = worstSeverity(exceptions);
                   return (
-                    <tr key={b.id}>
+                    <tr key={b.id} className={severity ? `row-${severity}` : undefined}>
+                      <td className="attention-cell">
+                        <ExceptionList items={exceptions} compact />
+                      </td>
                       <td>
                         <Link href={`/o/${org.slug}/bookings/${b.id}`} className="booking-link">
                           {b.bookingNumber}

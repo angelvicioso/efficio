@@ -38,6 +38,9 @@ Either run `npm run demo:seed` for ready-made demo logins (below), or open the a
 - An **ocean carrier** organization (created with its carrier code) automatically sees every booking under that code, and can **verify** or **remove** the companies on it.
 - Companies never see each other on a booking, and only see its history from when they joined. Only the carrier sees the full list.
 
+### Exceptions (needs attention, D-036)
+Critical within 24 hours of the cargo cutoff: empties not all picked up, containers not all delivered; and a passed cutoff with containers missing. Warnings: cutoff moved earlier, last port check failed. Shown as a panel of clickable counts, an Attention column with reasons, and red/amber rows; the list sorts most urgent first by default. In the demo, `HOU1003` (Acme) shows the 24-hour exceptions, `HOU1004` (Globex) a missed cutoff, and `HOU1005` a moved cutoff after two refreshes.
+
 ### Simulated data
 By default the app uses **simulated Port Houston data** (`PORT_ADAPTER=mock`). Try these booking numbers:
 
