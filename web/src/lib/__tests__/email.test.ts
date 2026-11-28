@@ -144,7 +144,7 @@ describe("notifications (D-037)", () => {
   it("sends the daily summary once a day per company, only when something needs attention", async () => {
     const w = await world();
     await w.bookings.add(w.acme, { carrierCode: "HLCU", bookingNumber: "HOU1003" });
-    await w.bookings.add(w.globex, { carrierCode: "MAEU", bookingNumber: "HOU1002" }); // fine: nothing for Globex
+    await w.bookings.add(w.globex, { carrierCode: "MSCU", bookingNumber: "HOU1001" }); // nothing wrong: no summary for Globex
     const before = w.mailer.recent().length;
     const tooEarly = new Notifier(w.db, w.accounts, w.bookings, w.mailer, () => "https://efficio.test", () => new Date(), 25);
     expect(await tooEarly.sendDailySummaries()).toBe(0);

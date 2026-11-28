@@ -30,3 +30,10 @@ const timeOnly = new Intl.DateTimeFormat("en-US", { timeZone: HOUSTON, hour: "nu
 export function formatTime(iso: string): string {
   return timeOnly.format(new Date(iso));
 }
+
+const shortDateTime = new Intl.DateTimeFormat("en-US", { timeZone: HOUSTON, month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+
+/** "Dec 4, 6:00 PM" in Houston time: for compact tags. */
+export function formatHoustonShort(iso: string | null | undefined): string {
+  return iso ? shortDateTime.format(new Date(iso)) : "—";
+}

@@ -44,15 +44,15 @@ Stories are **Draft** until their blocking questions are answered and acceptance
 ### E-06 · More from Port Houston's data (ideas from the N4 fields, 2026-11-28)
 | ID | Story | Blocked by | Status |
 |---|---|---|---|
-| S-051 | **Holds**: show customs, line or terminal holds on a container (`impediments`, `stopFlags`) and raise an exception when a hold blocks loading. | Verify fields with a held container | Idea |
-| S-052 | **Rolled containers**: detect when a container's outbound vessel changes (`intendedObCvId` vs `actualObCvId`) and alert. | — | Idea |
-| S-053 | **Late-gate permission**: show the vessel's `lateArrivals` so exporters know if late delivery after cutoff is allowed. | Verify field | Idea |
-| S-054 | **Vessel schedule changes and progress**: ETA/ETD changes, actual arrival/departure (`ata`/`atd`), `visitPhase` (inbound, working, departed), berth. Alert on delays. | — | Idea |
-| S-055 | **Gate appointments**: show truckers' appointments per container and open slots near the cutoff (`/road/gateappointments`, `/road/appointmenttimeslots`). | Verify endpoints | Idea |
-| S-056 | **VGM**: show whether each container's verified gross mass is submitted (`vgmVerifiedDate`); exception if missing near cutoff. | — | Idea |
-| S-057 | **Reefers and hazmat**: plugged-in/power status and temperature for reefers; hazmat flags and placards. | Reefer bookings to test | Idea |
-| S-058 | **Storage risk**: dwell days and last free day (`dwellDays`, `lastFreeDay`) to warn before storage charges. | — | Idea |
-| S-059 | **Who delivered it**: trucking company per gate move (`trkcoId`), for exporters coordinating several truckers. | — | Idea |
+| S-051 | **Holds**: show customs, line or terminal holds on a container (`impediments`, `stopFlags`) and raise an exception when a hold blocks loading. | Verify with a held container | **Built** (exception; D-038) |
+| S-052 | **Rolled containers**: detect when a container's outbound vessel changes (`intendedObCvId` vs `actualObCvId`) and alert. | — | **Built** (exception + email) |
+| S-053 | **Late-gate permission**: show the vessel's `lateArrivals` so exporters know if late delivery after cutoff is allowed. | Verify field structure (empty in sample) | **Built** (booking page; generic display until the structure is known) |
+| S-054 | **Vessel schedule changes and progress**: ETA/ETD changes, actual arrival/departure (`ata`/`atd`), `visitPhase` (inbound, working, departed), berth. Alert on delays. | — | **Built** (exception, date-change email, booking page) |
+| S-055 | **Gate appointments**: show truckers' appointments per container and open slots near the cutoff (`/road/gateappointments`, `/road/appointmenttimeslots`). | **Fields unknown**: run the connection check (both endpoints added) | **Display built** (simulated data); live mapping waits on the fields |
+| S-056 | **VGM**: show whether each container's verified gross mass is submitted (`vgmVerifiedDate`); exception if missing near cutoff. | — | **Built** (exception + email) |
+| S-057 | **Reefers and hazmat**: plugged-in/power status and temperature for reefers; hazmat flags and placards. | Reefer bookings to test | **Built** (booking page) |
+| S-058 | **Storage risk**: dwell days and last free day (`dwellDays`, `lastFreeDay`) to warn before storage charges. | — | **Built** (exception + email) |
+| S-059 | **Who delivered it**: trucking company per gate move (`trkcoId`), for exporters coordinating several truckers. | — | **Built** (booking page; shows Port Houston's trucker code) |
 
 ### E-04 · Multi-party collaboration (P-001)
 | ID | Story | Blocked by | Status |

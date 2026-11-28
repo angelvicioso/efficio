@@ -376,3 +376,17 @@ textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; 
 .danger-zone { margin-top: 2rem; border-color: var(--red-bg); }
 .danger-zone > summary { cursor: pointer; font-weight: 600; color: var(--red-fg); }
 .danger-zone[open] > summary { margin-bottom: 0.5rem; }
+
+/* ---------- Container detail chips (S-051 to S-059) ---------- */
+.chips { display: flex; flex-wrap: wrap; gap: 0.25rem; }
+.chips-cell { white-space: normal !important; min-width: 170px; max-width: 260px; }
+.chip { font-size: 0.72rem; font-weight: 600; padding: 0.1rem 0.45rem; border-radius: 999px; white-space: nowrap; }
+.chip-bad { background: var(--red-bg); color: var(--red-fg); }
+.chip-warn { background: var(--amber-bg); color: var(--amber-fg); }
+.chip-ok { background: var(--green-bg); color: var(--green-fg); }
+.chip-info { background: var(--grey-bg); color: var(--grey-fg); }
+.late-gate { margin-top: 0.75rem; padding: 0.5rem 0.75rem; border-radius: 8px; background: var(--blue-bg); color: var(--blue-fg); }
+.late-gate ul { margin: 0.25rem 0 0; padding-left: 1.1rem; }
+
+/* Container tables have many columns: give the page room on large screens. */
+.container:has(table.containers) { max-width: 1240px; }

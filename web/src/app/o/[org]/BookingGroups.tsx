@@ -3,9 +3,9 @@ import type { TrackedBooking } from "@/lib/bookings";
 import { containerProgress, remainingToDeliver, remainingToPickUp, type ContainerProgress } from "@/lib/domain/containers";
 import { carrierName } from "@/lib/domain/carriers";
 import { cargoCutoff, receivingStatus, type ReceivingState } from "@/lib/domain/status";
-import { CONTAINER_STAGE_LABELS, sizeTypeLabel } from "@/lib/domain/types";
+import { CONTAINER_STAGE_LABELS, sizeTypeLabel, type Container } from "@/lib/domain/types";
 import type { GroupSummary } from "@/lib/domain/vessels";
-import { formatHouston } from "@/lib/format";
+import { formatHouston, formatHoustonShort } from "@/lib/format";
 import { AccessBadge } from "../../AccessBadge";
 import { StatusBadge } from "../../StatusBadge";
 import { CarrierTrackingLink } from "../../CarrierTrackingLink";
@@ -177,6 +177,7 @@ export function ContainerTable({ snap }: { snap: TrackedBooking["latest"] extend
             <th>Empty picked up</th>
             <th>Delivered full</th>
             <th>Loaded on vessel</th>
+            <th>Details</th>
           </tr>
         </thead>
         <tbody>
@@ -187,14 +188,17 @@ export function ContainerTable({ snap }: { snap: TrackedBooking["latest"] extend
               <td>
                 <span className={`stage stage-${c.stage.toLowerCase().replace(/_/g, "-")}`}>{CONTAINER_STAGE_LABELS[c.stage]}</span>
               </td>
-              <td>{formatHouston(c.emptyPickedUpAt)}</td>
-              <td>{formatHouston(c.fullGateInAt)}</td>
-              <td>{formatHouston(c.loadedAt)}</td>
+              <td>{formatHoustonShort(c.emptyPickedUpAt)}</td>
+              <td>{formatHoustonShort(c.fullGateInAt)}</td>
+              <td>{formatHoustonShort(c.loadedAt)}</td>
+              <td className="chips-cell">
+                <ContainerChips c={c} bookedVessel={snap?.vesselVisit?.id ?? null} />
+              </td>
             </tr>
           ))}
           {waiting > 0 && (
             <tr>
-              <td colSpan={6} className="muted">
+              <td colSpan={7} className="muted">
                 {plural(waiting, "more container")} not picked up yet (empties still to collect)
               </td>
             </tr>
@@ -202,5 +206,45 @@ export function ContainerTable({ snap }: { snap: TrackedBooking["latest"] extend
         </tbody>
       </table>
     </div>
+  );
+}
+
+/** Small tags with a container's extra port details (S-051 to S-059). Only shows what the port reports. */
+export function ContainerChips({ c, bookedVessel }: { c: Container; bookedVessel: string | null }) {
+  const chips: { tone: "bad" | "warn" | "ok" | "info"; text: string; title?: string }[] = [];
+  for (const h of c.holds ?? []) chips.push({ tone: "bad", text: `Hold: ${h}` });
+  if (c.plannedVessel && bookedVessel && c.plannedVessel.id !== bookedVessel && c.stage !== "LOADED_ON_VESSEL") {
+    chips.push({ tone: "bad", text: `Rolled to ${c.plannedVessel.name ?? c.plannedVessel.id}` });
+  }
+  if (c.stage !== "EMPTY_PICKED_UP" && c.vgmVerifiedAt !== undefined) {
+    chips.push(
+      c.vgmVerifiedAt
+        ? { tone: "ok", text: `VGM ✓${c.vgmKg ? ` ${Math.round(c.vgmKg).toLocaleString("en-US")} kg` : ""}`, title: `Submitted ${formatHouston(c.vgmVerifiedAt)}` }
+        : { tone: "bad", text: "No VGM" },
+    );
+  }
+  if (c.lastFreeDay && c.stage === "FULL_AT_TERMINAL") {
+    const over = Date.parse(c.lastFreeDay) <= Date.now();
+    chips.push({ tone: over ? "bad" : "info", text: `${over ? "Free time ended" : "Free until"} ${formatHoustonShort(c.lastFreeDay)}`, title: c.dwellDays != null ? `${c.dwellDays} days at the terminal` : undefined });
+  }
+  if (c.reefer) {
+    chips.push({
+      tone: c.reefer.powered === false && c.stage === "FULL_AT_TERMINAL" ? "warn" : "info",
+      text: `Reefer${c.reefer.tempC != null ? ` ${c.reefer.tempC}°C` : ""}${c.reefer.powered == null ? "" : c.reefer.powered ? " · plugged in" : " · not plugged in"}`,
+    });
+  }
+  if (c.hazardous) chips.push({ tone: "warn", text: "Hazmat" });
+  if (c.yardPosition && c.stage === "FULL_AT_TERMINAL") chips.push({ tone: "info", text: `Yard ${c.yardPosition}` });
+  if (c.appointment) chips.push({ tone: "info", text: `Appt ${formatHoustonShort(c.appointment.at)}`, title: c.appointment.ref ? `Appointment ${c.appointment.ref}` : undefined });
+  if (c.trucker) chips.push({ tone: "info", text: c.trucker, title: "Trucking company" });
+  if (chips.length === 0) return <span className="muted">—</span>;
+  return (
+    <span className="chips">
+      {chips.map((ch) => (
+        <span key={ch.text} className={`chip chip-${ch.tone}`} title={ch.title}>
+          {ch.text}
+        </span>
+      ))}
+    </span>
   );
 }

@@ -16,6 +16,8 @@ function booking(o: {
   prevCutoffInH?: number;
   onFile?: boolean;
   error?: boolean;
+  extras?: Record<number, Partial<Container>>;
+  prevEtdInH?: number;
 }): TrackedBooking {
   const containers: Container[] = Array.from({ length: o.pickedUp ?? 0 }, (_, i) => ({
     number: `TEST${String(i).padStart(7, "0")}`,
@@ -24,6 +26,7 @@ function booking(o: {
     emptyPickedUpAt: at(-48),
     fullGateInAt: null,
     loadedAt: null,
+    ...(o.extras?.[i] ?? {}),
   }));
   const snap = (cutoffH: number | null | undefined): PortBookingSnapshot => ({
     source: "test",
@@ -46,7 +49,20 @@ function booking(o: {
     createdAt: at(-100),
     access: { role: "exporter", status: "claimed", via: "party", since: 0 },
     latest: { id: 2, fetchedAt: now.toISOString(), source: "test", data: o.error ? null : snap(o.cutoffInH), error: o.error ? "port down" : null },
-    previous: o.prevCutoffInH === undefined ? null : { id: 1, fetchedAt: at(-1), source: "test", data: snap(o.prevCutoffInH), error: null },
+    previous:
+      o.prevCutoffInH === undefined && o.prevEtdInH === undefined
+        ? null
+        : {
+            id: 1,
+            fetchedAt: at(-1),
+            source: "test",
+            data: (() => {
+              const p = snap(o.prevCutoffInH ?? o.cutoffInH);
+              if (o.prevEtdInH !== undefined) p.vesselVisit = { ...p.vesselVisit!, etd: at(o.prevEtdInH) };
+              return p;
+            })(),
+            error: null,
+          },
   };
 }
 const kinds = (b: TrackedBooking) => bookingExceptions(b, now).map((e) => e.kind);
@@ -98,5 +114,39 @@ describe("exceptions (S-049): 1 day before cutoff", () => {
     expect(attentionRank(critical, now)).toBeLessThan(attentionRank(warning, now));
     expect(attentionRank(warning, now)).toBeLessThan(attentionRank(fine, now));
     expect(worstSeverity(bookingExceptions(warning, now))).toBe("warning");
+  });
+});
+
+describe("more exceptions (S-051, S-052, S-054, S-056, S-058)", () => {
+  it("rolled: a container planned on a different vessel", () => {
+    const e = bookingExceptions(booking({ cutoffInH: 80, booked: 2, pickedUp: 2, delivered: 2, extras: { 0: { plannedVessel: { id: "V2", name: "SHIP / 2" } } } }), now);
+    expect(e).toEqual([expect.objectContaining({ kind: "ROLLED", severity: "critical", title: "1 container moved to another vessel", detail: "TEST0000000 now planned on SHIP / 2" })]);
+    expect(kinds(booking({ cutoffInH: 80, booked: 1, pickedUp: 1, delivered: 1, extras: { 0: { plannedVessel: { id: "V1", name: null } } } }))).toEqual([]);
+  });
+
+  it("holds: a warning days ahead, critical within 24h of cutoff", () => {
+    const early = bookingExceptions(booking({ cutoffInH: 80, booked: 1, pickedUp: 1, delivered: 1, extras: { 0: { holds: ["Customs exam"] } } }), now);
+    expect(early).toEqual([expect.objectContaining({ kind: "ON_HOLD", severity: "warning", title: "1 container on hold (Customs exam)" })]);
+    const late = bookingExceptions(booking({ cutoffInH: 10, booked: 1, pickedUp: 1, delivered: 1, extras: { 0: { holds: ["Customs exam"] } } }), now);
+    expect(late.find((x) => x.kind === "ON_HOLD")?.severity).toBe("critical");
+  });
+
+  it("VGM: only flags delivered containers explicitly without VGM, within 24h", () => {
+    expect(kinds(booking({ cutoffInH: 10, booked: 2, pickedUp: 2, delivered: 2, extras: { 0: { vgmVerifiedAt: null } } }))).toEqual(["VGM_MISSING"]);
+    expect(kinds(booking({ cutoffInH: 10, booked: 2, pickedUp: 2, delivered: 2 }))).toEqual([]); // VGM not reported: no alarm
+    expect(kinds(booking({ cutoffInH: 40, booked: 2, pickedUp: 2, delivered: 2, extras: { 0: { vgmVerifiedAt: null } } }))).toEqual([]); // too early
+  });
+
+  it("storage: warning within 24h of free time ending, critical after", () => {
+    const soon = bookingExceptions(booking({ cutoffInH: 80, booked: 1, pickedUp: 1, delivered: 1, extras: { 0: { lastFreeDay: at(10) } } }), now);
+    expect(soon).toEqual([expect.objectContaining({ kind: "STORAGE", severity: "warning", title: "Free time ends for 1 container", detail: "in 10h" })]);
+    const over = bookingExceptions(booking({ cutoffInH: 80, booked: 1, pickedUp: 1, delivered: 1, extras: { 0: { lastFreeDay: at(-30) } } }), now);
+    expect(over).toEqual([expect.objectContaining({ kind: "STORAGE", severity: "critical", title: "1 container past free time", detail: "storage charges for 1d 6h" })]);
+  });
+
+  it("vessel schedule: departure moved by an hour or more", () => {
+    const e = bookingExceptions(booking({ cutoffInH: 80, booked: 0, etdInH: 120, prevEtdInH: 96 }), now);
+    expect(e).toEqual([expect.objectContaining({ kind: "VESSEL_SCHEDULE_CHANGED", severity: "warning", title: "Vessel departure moved 1d later" })]);
+    expect(kinds(booking({ cutoffInH: 80, booked: 0, etdInH: 96, prevEtdInH: 96 }))).toEqual([]);
   });
 });

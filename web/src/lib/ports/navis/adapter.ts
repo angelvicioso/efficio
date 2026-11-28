@@ -48,6 +48,18 @@ export interface N4Booking {
 }
 
 export interface N4Unit {
+  impediments?: { impedimentRoad?: string | null; impedimentVessel?: string | null; impedimentRail?: string | null } | null;
+  stopFlags?: { stoppedRoad?: boolean | null; stoppedVessel?: boolean | null; stoppedRail?: boolean | null } | null;
+  vgmVerifiedDate?: N4Date;
+  contents?: { goodsAndCtrWtKgVerifiedGross?: number | null } | null;
+  actualObCvId?: string | null;
+  lastFreeDay?: N4Date;
+  ufvBilling?: { lastFreeDay?: N4Date; lineLastFreeDay?: N4Date } | null;
+  extras?: { dwellDays?: number | null } | null;
+  requiresPower?: boolean | null;
+  reefer?: { isPowered?: boolean | null; reeferRequirement?: { rfreqTempRequiredC?: number | null } | null } | null;
+  isHazardous?: boolean | null;
+  lastKnownPosition?: { posName?: string | null } | null;
   unitId?: string | null;
   freightKind?: string | null;
   category?: string | null;
@@ -68,6 +80,7 @@ export interface N4GateTransaction {
   ctrTypeId?: string | null;
   eqoNbr?: string | null;
   lineId?: string | null;
+  trkcoId?: string | null;
   created?: N4Date;
   handled?: N4Date;
   [key: string]: unknown;
@@ -119,6 +132,7 @@ export function buildContainers(units: N4Unit[], gates: N4GateTransaction[]): Co
     if (!move) continue;
     const c = get(g.ctrId.trim(), g.ctrTypeId);
     const at = toIso(g.handled) ?? toIso(g.created);
+    if (g.trkcoId?.trim()) c.trucker = g.trkcoId.trim();
     if (move === "EMPTY_OUT") c.emptyPickedUpAt ??= at;
     if (move === "FULL_IN") {
       c.fullGateInAt ??= at;
@@ -132,8 +146,50 @@ export function buildContainers(units: N4Unit[], gates: N4GateTransaction[]): Co
     if (stage && (u.freightKind ?? "FCL").toUpperCase() !== "MTY") raise(c, stage);
     c.fullGateInAt ??= c.stage !== "EMPTY_PICKED_UP" ? toIso(u.timestamps?.timeIn) : null;
     if (c.stage === "LOADED_ON_VESSEL") c.loadedAt ??= toIso(u.timestamps?.timeOfLoading);
+    Object.assign(c, unitDetails(u));
   }
   return [...byId.values()].sort((a, b) => a.number.localeCompare(b.number));
+}
+
+/**
+ * Extra container details from an N4 unit (S-051 to S-059). A field is only set when the
+ * unit record has it, so missing data never raises an exception (undefined = not reported).
+ */
+export function unitDetails(u: N4Unit): Partial<Container> {
+  const d: Partial<Container> = {};
+  if (u.impediments !== undefined || u.stopFlags !== undefined) {
+    const holds = [u.impediments?.impedimentRoad, u.impediments?.impedimentVessel, u.impediments?.impedimentRail]
+      .filter((h): h is string => typeof h === "string" && h.trim() !== "")
+      .map((h) => h.trim());
+    if (u.stopFlags?.stoppedVessel) holds.push("Stopped for vessel");
+    if (u.stopFlags?.stoppedRoad) holds.push("Stopped for road");
+    d.holds = [...new Set(holds)];
+  }
+  if ("vgmVerifiedDate" in u) d.vgmVerifiedAt = toIso(u.vgmVerifiedDate);
+  if (u.contents && "goodsAndCtrWtKgVerifiedGross" in u.contents) d.vgmKg = u.contents.goodsAndCtrWtKgVerifiedGross ?? null;
+  const planned = u.intendedObCvId?.trim() || u.actualObCvId?.trim();
+  if (planned) d.plannedVessel = { id: planned, name: null };
+  if (u.ufvBilling || "lastFreeDay" in u) d.lastFreeDay = toIso(u.ufvBilling?.lastFreeDay) ?? toIso(u.lastFreeDay) ?? toIso(u.ufvBilling?.lineLastFreeDay);
+  if (typeof u.extras?.dwellDays === "number") d.dwellDays = u.extras.dwellDays;
+  if ("requiresPower" in u) {
+    d.reefer = u.requiresPower ? { tempC: u.reefer?.reeferRequirement?.rfreqTempRequiredC ?? null, powered: u.reefer?.isPowered ?? null } : null;
+  }
+  if ("isHazardous" in u) d.hazardous = u.isHazardous ?? null;
+  if (u.lastKnownPosition?.posName) d.yardPosition = u.lastKnownPosition.posName.trim();
+  return d;
+}
+
+/** Late-gate arrangements on a vessel visit, as readable lines (structure unconfirmed; S-053). */
+export function lateGateLines(visit: Record<string, unknown> | null): string[] | undefined {
+  const list = visit?.lateArrivals;
+  if (!Array.isArray(list)) return undefined;
+  return list.map((entry) => {
+    if (typeof entry !== "object" || entry === null) return String(entry);
+    return Object.entries(entry as Record<string, unknown>)
+      .filter(([, v]) => v !== null && v !== "" && typeof v !== "object")
+      .map(([k, v]) => `${k}: ${typeof v === "number" && v > 1e11 ? toIso(v) : String(v)}`)
+      .join(", ");
+  });
 }
 
 /** What was booked: per container type from items[], or the booking's overall quantity if items are missing. */
@@ -151,6 +207,18 @@ export function equipmentOf(b: N4Booking): EquipmentLine[] {
   return lines;
 }
 
+function firstBerth(berths: unknown): string | null {
+  if (!Array.isArray(berths) || berths.length === 0) return null;
+  const b = berths[0];
+  if (typeof b === "string") return b;
+  if (b && typeof b === "object") {
+    const o = b as Record<string, unknown>;
+    const v = o.berthId ?? o.berthName ?? o.name ?? o.id;
+    return typeof v === "string" ? v : null;
+  }
+  return null;
+}
+
 /** A trimmed copy of what the port sent: booking and vessel facts only, no other parties' details. */
 function trimmedRaw(b: N4Booking, visit: Record<string, unknown> | null, units: N4Unit[], gates: N4GateTransaction[]) {
   const pick = <T extends object>(o: T | null | undefined, keys: string[]) =>
@@ -158,9 +226,11 @@ function trimmedRaw(b: N4Booking, visit: Record<string, unknown> | null, units: 
   return {
     source: "Port Houston (Navis N4)",
     booking: pick(b, ["nbr", "lineId", "lineScac", "category", "quantity", "tally", "tallyReceive", "polId", "pod1Id", "eqStatus", "visit", "timeEmptyPickup", "timeBeginReceive", "timeCargoCutoff", "timeReeferCutoff", "timeHazCutoff", "items"]),
-    vesselVisit: pick(visit, ["visitId", "vesName", "facility", "visitPhase", "obVyg", "beginReceive", "cargoCutoff", "reeferCutoff", "hazCutoff", "emptyPickup", "publishedEta", "publishedEtd", "eta", "etd", "lines"]),
-    containers: units.map((u) => pick(u, ["unitId", "freightKind", "transitState", "eqtypeId", "intendedObCvId", "timestamps"])),
-    gateMoves: gates.map((g) => pick(g, ["subType", "status", "ctrId", "ctrFreightKind", "ctrTypeId", "created", "handled"])),
+    vesselVisit: pick(visit, ["visitId", "vesName", "facility", "visitPhase", "obVyg", "beginReceive", "cargoCutoff", "reeferCutoff", "hazCutoff", "emptyPickup", "publishedEta", "publishedEtd", "eta", "etd", "ata", "atd", "berths", "lateArrivals", "lines"]),
+    containers: units.map((u) =>
+      pick(u, ["unitId", "freightKind", "transitState", "eqtypeId", "intendedObCvId", "actualObCvId", "timestamps", "impediments", "stopFlags", "vgmVerifiedDate", "lastFreeDay", "ufvBilling", "requiresPower", "isHazardous", "lastKnownPosition"]),
+    ),
+    gateMoves: gates.map((g) => pick(g, ["subType", "status", "ctrId", "ctrFreightKind", "ctrTypeId", "trkcoId", "created", "handled"])),
   };
 }
 
@@ -272,6 +342,17 @@ export class NavisPortHoustonAdapter implements PortAdapter {
       equipment: equipmentOf(booking),
       containers,
       tally: { emptiesOut: booking.tally ?? 0, loadsIn: booking.tallyReceive ?? 0 },
+      ...(visitRaw
+        ? {
+            vesselProgress: {
+              phase: typeof visitRaw.visitPhase === "string" ? visitRaw.visitPhase : null,
+              arrivedAt: toIso(visitRaw.ata as N4Date),
+              departedAt: toIso(visitRaw.atd as N4Date),
+              berth: firstBerth(visitRaw.berths),
+            },
+            lateGate: lateGateLines(visitRaw),
+          }
+        : {}),
       raw: trimmedRaw(booking, visitRaw, units, gates),
       fetchedAt,
     };

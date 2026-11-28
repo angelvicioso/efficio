@@ -93,6 +93,19 @@ All five endpoints answered (100 records per page). **Every list contains all co
 | Container list | `inventory/units` with `departOrderNbr` = booking: `unitId`, `freightKind`, `transitState` (S30–S50 at terminal, S60+ loaded), `timestamps.timeIn` / `timeOfLoading` | |
 | Gate moves | `road/gatetransactions` with `eqoNbr` = booking: `subType` DM = empty out, RE = full in; `ctrId`, `handled` | **DM confirmed** 2026-11-26; RE still to confirm with a delivered container |
 
+### Extra fields (D-038, to verify with real held / rolled / reefer containers)
+| Efficio | N4 source |
+|---|---|
+| Holds | unit `impediments.impedimentRoad/Vessel/Rail`, `stopFlags.stoppedVessel/Road` |
+| Rolled | unit `intendedObCvId` (or `actualObCvId`) ≠ the booking's `visit.visitId` |
+| VGM | unit `vgmVerifiedDate`, `contents.goodsAndCtrWtKgVerifiedGross` |
+| Storage | unit `ufvBilling.lastFreeDay` (or `lastFreeDay`, `ufvBilling.lineLastFreeDay`), `extras.dwellDays` |
+| Reefer / hazmat | unit `requiresPower`, `reefer.isPowered`, `reefer.reeferRequirement.rfreqTempRequiredC`, `isHazardous` |
+| Yard position | unit `lastKnownPosition.posName` |
+| Trucker | gate move `trkcoId` |
+| Vessel progress | vessel `visitPhase`, `ata`, `atd`, `berths[]`; late gate `lateArrivals[]` (shown as-is until its structure is known) |
+| Gate appointments | `/road/gateappointments`, `/road/appointmenttimeslots`: **fields unknown**. Both were added to the connection check; run it and send the report |
+
 ## Going live: checklist
 | # | Step | Owner | Status |
 |---|---|---|---|

@@ -16,6 +16,10 @@ function keyFields(s: PortBookingSnapshot): Record<string, string | null> {
     "Receiving opens (ERD)": s.receivingOpensAt,
   };
   for (const c of s.cutoffs) fields[CUTOFF_LABELS[c.kind]] = c.at;
+  if (s.vesselVisit) {
+    fields["Vessel departs (ETD)"] = s.vesselVisit.etd;
+    fields["Vessel arrives (ETA)"] = s.vesselVisit.eta;
+  }
   if (s.equipment || s.containers) {
     const p = containerProgress(s);
     fields["Containers booked"] = String(p.booked);

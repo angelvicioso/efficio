@@ -4,7 +4,7 @@ import { requireOrgAccess } from "@/lib/auth/session";
 import { bookingService } from "@/lib/service";
 import { receivingStatus } from "@/lib/domain/status";
 import { diffSnapshots } from "@/lib/domain/changes";
-import { CUTOFF_LABELS, TERMINAL_LABELS } from "@/lib/domain/types";
+import { CUTOFF_LABELS, TERMINAL_LABELS, vesselPhaseLabel } from "@/lib/domain/types";
 import { formatAgo, formatHouston } from "@/lib/format";
 import { StatusBadge } from "../../../../StatusBadge";
 import { refreshBookingAction, removeBookingAction, removePartyAction, verifyPartyAction } from "../../actions";
@@ -158,7 +158,41 @@ export default async function BookingPage({ params }: { params: Promise<{ org: s
               <dd>{formatHouston(snap.vesselVisit?.etd)}</dd>
               <dt>Carrier</dt>
               <dd>{carrierName(booking.carrierCode)}</dd>
+              {snap.vesselProgress?.phase && (
+                <>
+                  <dt>Vessel status</dt>
+                  <dd>{vesselPhaseLabel(snap.vesselProgress.phase)}</dd>
+                </>
+              )}
+              {snap.vesselProgress?.berth && (
+                <>
+                  <dt>Berth</dt>
+                  <dd>{snap.vesselProgress.berth}</dd>
+                </>
+              )}
+              {snap.vesselProgress?.arrivedAt && (
+                <>
+                  <dt>Arrived</dt>
+                  <dd>{formatHouston(snap.vesselProgress.arrivedAt)}</dd>
+                </>
+              )}
+              {snap.vesselProgress?.departedAt && (
+                <>
+                  <dt>Departed</dt>
+                  <dd>{formatHouston(snap.vesselProgress.departedAt)}</dd>
+                </>
+              )}
             </dl>
+            {snap.lateGate && snap.lateGate.length > 0 && (
+              <div className="late-gate">
+                <div className="small"><strong>Late gate</strong></div>
+                <ul className="small">
+                  {snap.lateGate.map((l) => (
+                    <li key={l}>{l}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </section>
         </div>
       )}

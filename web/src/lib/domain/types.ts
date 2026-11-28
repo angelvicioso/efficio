@@ -42,6 +42,33 @@ export interface Container {
   emptyPickedUpAt: string | null;
   fullGateInAt: string | null;
   loadedAt: string | null;
+  // ---- Extra port details (S-051 to S-059). For each: undefined = the port doesn't report it,
+  // so it never raises an exception; null = reported as not set (e.g. VGM not submitted).
+  /** Active holds, e.g. ["Customs exam"]. */
+  holds?: string[];
+  /** When the verified gross mass was submitted. */
+  vgmVerifiedAt?: string | null;
+  vgmKg?: number | null;
+  /** The outbound vessel the terminal plans for this container; differs from the booking's when rolled. */
+  plannedVessel?: { id: string; name: string | null } | null;
+  /** Storage: end of free time at the terminal. */
+  lastFreeDay?: string | null;
+  dwellDays?: number | null;
+  reefer?: { tempC: number | null; powered: boolean | null } | null;
+  hazardous?: boolean | null;
+  /** Trucking company that delivered it (or picked up the empty). */
+  trucker?: string | null;
+  /** Gate appointment for delivering it. */
+  appointment?: { at: string; ref: string | null } | null;
+  yardPosition?: string | null;
+}
+
+/** Vessel progress at the terminal (S-054). */
+export interface VesselProgress {
+  phase: string | null;
+  arrivedAt: string | null;
+  departedAt: string | null;
+  berth: string | null;
 }
 
 /** What was booked: e.g. 4 × 45G1. */
@@ -71,6 +98,9 @@ export interface PortBookingSnapshot {
    * used when individual container records are incomplete.
    */
   tally?: { emptiesOut: number; loadsIn: number };
+  vesselProgress?: VesselProgress;
+  /** Late-gate arrangements the terminal lists for this vessel (S-053), as readable lines. */
+  lateGate?: string[];
   /** The untranslated response, so exporters can see exactly what the port says (S-002). */
   raw: unknown;
   fetchedAt: string;
@@ -129,3 +159,19 @@ export const CONTAINER_STAGE_LABELS: Record<ContainerStage, string> = {
   FULL_AT_TERMINAL: "Loaded, at terminal",
   LOADED_ON_VESSEL: "On vessel",
 };
+
+/** N4 vessel visit phases, in plain words. */
+export function vesselPhaseLabel(phase: string | null | undefined): string | null {
+  if (!phase) return null;
+  const map: Record<string, string> = {
+    "10CREATED": "Scheduled",
+    "20INBOUND": "Inbound",
+    "30ARRIVED": "Arrived",
+    "40WORKING": "Working (loading/discharging)",
+    "50COMPLETE": "Work complete",
+    "60DEPARTED": "Departed",
+    "70CLOSED": "Closed",
+    "80CANCELED": "Canceled",
+  };
+  return map[phase.toUpperCase()] ?? phase;
+}

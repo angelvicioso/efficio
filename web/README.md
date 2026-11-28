@@ -39,7 +39,7 @@ Either run `npm run demo:seed` for ready-made demo logins (below), or open the a
 - Companies never see each other on a booking, and only see its history from when they joined. Only the carrier sees the full list.
 
 ### Exceptions (needs attention, D-036)
-Critical within 24 hours of the cargo cutoff: empties not all picked up, containers not all delivered; and a passed cutoff with containers missing. Warnings: cutoff moved earlier, last port check failed. Shown as a panel of clickable counts, an Attention column with reasons, and red/amber rows; the list sorts most urgent first by default. In the demo, `HOU1003` (Acme) shows the 24-hour exceptions, `HOU1004` (Globex) a missed cutoff, and `HOU1005` a moved cutoff after two refreshes.
+Critical within 24 hours of the cargo cutoff: empties not all picked up, containers not all delivered; and a passed cutoff with containers missing. Warnings: cutoff moved earlier, last port check failed. Shown as a panel of clickable counts, an Attention column with reasons, and red/amber rows; the list sorts most urgent first by default. Also (D-038): holds, rolled containers, vessel departure changes, missing VGM and storage charges. In the demo: `HOU1003` 24-hour exceptions and missing VGM; `HOU1002` a customs hold; `HOU1006` a rolled container; `HOU1004` (Globex) a missed cutoff and storage charges; `HOU1005` reefers and a moved cutoff and departure (after two refreshes); `HOU1007` hazmat.
 
 ### Simulated data
 By default the app uses **simulated Port Houston data** (`PORT_ADAPTER=mock`). Try these booking numbers:

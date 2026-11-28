@@ -134,3 +134,52 @@ describe("finding the carrier for a booking number", () => {
     expect(found.sort()).toEqual(["MAEU", "MSCU"]); // OTHER00001 (another company's booking) is ignored
   });
 });
+
+describe("extra container details from N4 units (S-051 to S-059)", () => {
+  it("maps holds, VGM, rolled vessel, storage, reefer, hazmat and position", async () => {
+    const { unitDetails } = await import("../ports/navis/adapter");
+    const d = unitDetails({
+      unitId: "MSKU1111111",
+      impediments: { impedimentRoad: "CUSTOMS", impedimentVessel: null, impedimentRail: null },
+      stopFlags: { stoppedVessel: true, stoppedRoad: false },
+      vgmVerifiedDate: null,
+      contents: { goodsAndCtrWtKgVerifiedGross: 21000 },
+      intendedObCvId: "SOF-GN648W",
+      ufvBilling: { lastFreeDay: Date.parse("2026-12-03T00:00:00Z") },
+      extras: { dwellDays: 4 },
+      requiresPower: true,
+      reefer: { isPowered: false, reeferRequirement: { rfreqTempRequiredC: -18 } },
+      isHazardous: true,
+      lastKnownPosition: { posName: "Y-BPT-A12B-031002" },
+    });
+    expect(d).toEqual({
+      holds: ["CUSTOMS", "Stopped for vessel"],
+      vgmVerifiedAt: null,
+      vgmKg: 21000,
+      plannedVessel: { id: "SOF-GN648W", name: null },
+      lastFreeDay: "2026-12-03T00:00:00.000Z",
+      dwellDays: 4,
+      reefer: { tempC: -18, powered: false },
+      hazardous: true,
+      yardPosition: "Y-BPT-A12B-031002",
+    });
+  });
+
+  it("leaves out what the port doesn't report, so it can't raise false alarms", async () => {
+    const { unitDetails } = await import("../ports/navis/adapter");
+    expect(unitDetails({ unitId: "X" })).toEqual({});
+  });
+
+  it("reads late-gate entries as lines without inventing structure", async () => {
+    const { lateGateLines } = await import("../ports/navis/adapter");
+    expect(lateGateLines({ lateArrivals: [{ lineId: "MSC", lateUntil: Date.parse("2026-11-27T22:00:00Z"), note: null }] })).toEqual([
+      "lineId: MSC, lateUntil: 2026-11-27T22:00:00.000Z",
+    ]);
+    expect(lateGateLines({})).toBeUndefined();
+  });
+
+  it("records the trucker from gate moves", async () => {
+    const c = buildContainers([], [{ subType: "DM", ctrId: "AAAU1", eqoNbr: "B", trkcoId: "LSTR" }]);
+    expect(c[0].trucker).toBe("LSTR");
+  });
+});

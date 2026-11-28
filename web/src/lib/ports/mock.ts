@@ -23,6 +23,13 @@ interface Scenario {
   pickedUp: number;
   delivered: number;
   loaded?: number;
+  /** Per-container extras by index (S-051 to S-059 demos). */
+  extras?: Record<number, Partial<Container>>;
+  vesselPhase?: string;
+  berth?: string;
+  lateGate?: string[];
+  /** Hours the vessel's departure moves later on each of the next two refreshes (S-054 demo). */
+  etdDriftH?: number;
 }
 
 /**
@@ -32,14 +39,20 @@ interface Scenario {
  */
 export const MOCK_SCENARIOS: Record<string, Scenario> = {
   HOU1001: { description: "Receiving not open yet", terminal: "BAYPORT", carrierCode: "MSCU", visitId: "MSCAUR548", vesselName: "MSC AURORA", voyage: "FA548W", opensIn: 2 * DAY + 5 * HOUR, cargoCutoffIn: 6 * DAY, etdIn: 8 * DAY, equipment: [{ sizeType: "45G1", quantity: 3 }], pickedUp: 1, delivered: 0 },
-  HOU1002: { description: "Receiving open", terminal: "BAYPORT", carrierCode: "MAEU", visitId: "MAEHOU247", vesselName: "MAERSK HOUSTON", voyage: "247E", opensIn: -1 * DAY, cargoCutoffIn: 4 * DAY + 3 * HOUR, etdIn: 6 * DAY, equipment: [{ sizeType: "45G1", quantity: 4 }], pickedUp: 4, delivered: 2 },
-  HOU1003: { description: "Closing soon, containers outstanding", terminal: "BARBOURS_CUT", carrierCode: "HLCU", visitId: "HAMEXP033", vesselName: "HAMBURG EXPRESS", voyage: "033W", opensIn: -4 * DAY, cargoCutoffIn: 20 * HOUR, etdIn: 2 * DAY, equipment: [{ sizeType: "22G1", quantity: 3 }], pickedUp: 2, delivered: 1 },
-  HOU1004: { description: "Receiving closed, one container missed the cutoff", terminal: "BAYPORT", carrierCode: "CMDU", visitId: "CMATEX0FL", vesselName: "CMA CGM TEXAS", voyage: "0FL3SW1MA", opensIn: -7 * DAY, cargoCutoffIn: -1 * DAY, etdIn: 1 * DAY, equipment: [{ sizeType: "45G1", quantity: 5 }], pickedUp: 5, delivered: 4, loaded: 3 },
-  HOU1005: { description: "Cutoff moves earlier on each refresh", terminal: "BAYPORT", carrierCode: "ONEY", visitId: "ONEGUL012", vesselName: "ONE GULF", voyage: "012W", opensIn: -2 * DAY, cargoCutoffIn: 5 * DAY, etdIn: 7 * DAY, equipment: [{ sizeType: "45R1", quantity: 2 }], pickedUp: 1, delivered: 0 },
+  HOU1002: { description: "Receiving open, a container on customs hold", terminal: "BAYPORT", carrierCode: "MAEU", visitId: "MAEHOU247", vesselName: "MAERSK HOUSTON", voyage: "247E", opensIn: -1 * DAY, cargoCutoffIn: 4 * DAY + 3 * HOUR, etdIn: 6 * DAY, equipment: [{ sizeType: "45G1", quantity: 4 }], pickedUp: 4, delivered: 2, vesselPhase: "20INBOUND",
+    extras: { 1: { holds: ["Customs exam"] }, 2: { appointment: { at: "+20h", ref: "APT-55102" } }, 3: { appointment: { at: "+26h", ref: "APT-55117" } } } },
+  HOU1003: { description: "Closing soon, containers outstanding", terminal: "BARBOURS_CUT", carrierCode: "HLCU", visitId: "HAMEXP033", vesselName: "HAMBURG EXPRESS", voyage: "033W", opensIn: -4 * DAY, cargoCutoffIn: 20 * HOUR, etdIn: 2 * DAY, equipment: [{ sizeType: "22G1", quantity: 3 }], pickedUp: 2, delivered: 1, vesselPhase: "40WORKING", berth: "BCT Berth 3",
+    lateGate: ["Late arrivals accepted until 4 hours after cargo cutoff, with Hapag-Lloyd approval"], extras: { 0: { vgmVerifiedAt: null } } },
+  HOU1004: { description: "Receiving closed, one container missed the cutoff", terminal: "BAYPORT", carrierCode: "CMDU", visitId: "CMATEX0FL", vesselName: "CMA CGM TEXAS", voyage: "0FL3SW1MA", opensIn: -7 * DAY, cargoCutoffIn: -1 * DAY, etdIn: 1 * DAY, equipment: [{ sizeType: "45G1", quantity: 5 }], pickedUp: 5, delivered: 4, loaded: 3, vesselPhase: "40WORKING", berth: "BPT Berth 2",
+    extras: { 3: { lastFreeDay: "-6h", dwellDays: 5 } } },
+  HOU1005: { description: "Reefers; cutoff and vessel departure move on refresh", terminal: "BAYPORT", carrierCode: "ONEY", visitId: "ONEGUL012", vesselName: "ONE GULF", voyage: "012W", opensIn: -2 * DAY, cargoCutoffIn: 5 * DAY, etdIn: 7 * DAY, equipment: [{ sizeType: "45R1", quantity: 2 }], pickedUp: 1, delivered: 0, etdDriftH: 24,
+    extras: { 0: { reefer: { tempC: -18, powered: null } } } },
   // More bookings on MAERSK HOUSTON, for the vessel view (S-040). HOU1007 is an MSC booking on the
   // same ship (carriers share vessels in alliances), with MSC's own voyage number and cutoff.
-  HOU1006: { description: "Another booking on MAERSK HOUSTON", terminal: "BAYPORT", carrierCode: "MAEU", visitId: "MAEHOU247", vesselName: "MAERSK HOUSTON", voyage: "247E", opensIn: -1 * DAY, cargoCutoffIn: 4 * DAY + 3 * HOUR, etdIn: 6 * DAY, equipment: [{ sizeType: "45G1", quantity: 6 }], pickedUp: 3, delivered: 1 },
-  HOU1007: { description: "MSC booking on MAERSK HOUSTON", terminal: "BAYPORT", carrierCode: "MSCU", visitId: "MAEHOU247", vesselName: "MAERSK HOUSTON", voyage: "FX247E", opensIn: -1 * DAY, cargoCutoffIn: 3 * DAY + 15 * HOUR, etdIn: 6 * DAY, equipment: [{ sizeType: "22G1", quantity: 2 }, { sizeType: "45G1", quantity: 1 }], pickedUp: 3, delivered: 3 },
+  HOU1006: { description: "Another booking on MAERSK HOUSTON, one container rolled", terminal: "BAYPORT", carrierCode: "MAEU", visitId: "MAEHOU247", vesselName: "MAERSK HOUSTON", voyage: "247E", opensIn: -1 * DAY, cargoCutoffIn: 4 * DAY + 3 * HOUR, etdIn: 6 * DAY, equipment: [{ sizeType: "45G1", quantity: 6 }], pickedUp: 3, delivered: 1, vesselPhase: "20INBOUND",
+    extras: { 0: { plannedVessel: { id: "MAEHOU251", name: "MAERSK HOUSTON / 251E" } } } },
+  HOU1007: { description: "MSC booking on MAERSK HOUSTON", terminal: "BAYPORT", carrierCode: "MSCU", visitId: "MAEHOU247", vesselName: "MAERSK HOUSTON", voyage: "FX247E", opensIn: -1 * DAY, cargoCutoffIn: 3 * DAY + 15 * HOUR, etdIn: 6 * DAY, equipment: [{ sizeType: "22G1", quantity: 2 }, { sizeType: "45G1", quantity: 1 }], pickedUp: 3, delivered: 3, vesselPhase: "20INBOUND",
+    extras: { 2: { hazardous: true } } },
 };
 
 /**
@@ -95,6 +108,7 @@ export class MockPortHoustonAdapter implements PortAdapter {
     // HOU1005 demonstrates change detection (S-020): the cutoff moves 12h earlier on each of the
     // next two lookups, then settles (so frequent automatic refreshes don't push it into the past).
     const drift = key === "HOU1005" ? Math.min(count - 1, 2) * 12 * HOUR : 0;
+    const etdDrift = scenario.etdDriftH ? Math.min(count - 1, 2) * scenario.etdDriftH * HOUR : 0;
     const anchor = t;
     const at = (offset: number) => new Date(anchor + offset).toISOString();
     const cargoCutoff = at(scenario.cargoCutoffIn - drift);
@@ -109,9 +123,16 @@ export class MockPortHoustonAdapter implements PortAdapter {
         id: scenario.visitId,
         vesselName: scenario.vesselName,
         voyage: scenario.voyage,
-        eta: at(scenario.etdIn - 1 * DAY),
-        etd: at(scenario.etdIn),
+        eta: at(scenario.etdIn - 1 * DAY + etdDrift),
+        etd: at(scenario.etdIn + etdDrift),
       },
+      vesselProgress: {
+        phase: scenario.vesselPhase ?? "20INBOUND",
+        arrivedAt: scenario.vesselPhase === "40WORKING" ? at(-2 * HOUR) : null,
+        departedAt: null,
+        berth: scenario.berth ?? null,
+      },
+      ...(scenario.lateGate ? { lateGate: scenario.lateGate } : {}),
       receivingOpensAt: at(scenario.opensIn),
       cutoffs: [
         { kind: "cargo", at: cargoCutoff, setBy: "terminal" },
@@ -131,6 +152,8 @@ export class MockPortHoustonAdapter implements PortAdapter {
     };
   }
 }
+
+const TRUCKERS = ["Lone Star Drayage", "Gulf Coast Trucking", "Bayou City Haulers"];
 
 /** Container owner prefixes for the simulated carriers. */
 const OWNER_PREFIX: Record<string, string> = { MAEU: "MSKU", MSCU: "MSCU", HLCU: "HLXU", CMDU: "CMAU", ONEY: "ONEU" };
@@ -157,13 +180,31 @@ function mockContainers(bookingNumber: string, s: Scenario, anchor: number): Con
     // Spread events over the past: pickups ~1-3 days ago, gate-ins after the window opened.
     const pickup = anchor - (3 * DAY - i * 7 * HOUR);
     const gateIn = Math.max(opened + 2 * HOUR, pickup + 10 * HOUR) + i * HOUR;
-    return {
+    const fullGateInAt = delivered ? new Date(Math.min(gateIn, anchor - HOUR)).toISOString() : null;
+    const base: Container = {
       number: `${first10}${containerCheckDigit(first10)}`,
       sizeType,
       stage: loaded ? "LOADED_ON_VESSEL" : delivered ? "FULL_AT_TERMINAL" : "EMPTY_PICKED_UP",
       emptyPickedUpAt: new Date(pickup).toISOString(),
-      fullGateInAt: delivered ? new Date(Math.min(gateIn, anchor - HOUR)).toISOString() : null,
+      fullGateInAt,
       loadedAt: loaded ? new Date(anchor - 2 * HOUR + i * 10 * 60_000).toISOString() : null,
+      holds: [],
+      vgmVerifiedAt: delivered ? fullGateInAt : undefined,
+      vgmKg: delivered ? 18_000 + i * 750 : undefined,
+      plannedVessel: { id: s.visitId, name: `${s.vesselName} / ${s.voyage}` },
+      lastFreeDay: delivered ? new Date(anchor + s.etdIn + DAY).toISOString() : undefined,
+      dwellDays: delivered ? Math.max(0, Math.round((anchor - Date.parse(fullGateInAt!)) / DAY)) : undefined,
+      hazardous: false,
+      trucker: TRUCKERS[i % TRUCKERS.length],
+      yardPosition: delivered && !loaded ? `${s.terminal === "BAYPORT" ? "BPT" : "BCT"}-Y${(i % 4) + 1}-${String(10 + i).padStart(3, "0")}` : null,
+    };
+    const extra = s.extras?.[i] ?? {};
+    const rel = (v: string) => new Date(anchor + Number(v.slice(0, -1)) * HOUR).toISOString();
+    return {
+      ...base,
+      ...extra,
+      ...(typeof extra.lastFreeDay === "string" && /^[+-]\d+h$/.test(extra.lastFreeDay) ? { lastFreeDay: rel(extra.lastFreeDay) } : {}),
+      ...(extra.appointment && /^[+-]\d+h$/.test(extra.appointment.at) ? { appointment: { ...extra.appointment, at: rel(extra.appointment.at) } } : {}),
     };
   });
 }

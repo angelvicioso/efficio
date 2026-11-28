@@ -38,6 +38,8 @@ export const CHECKS: { resource: string; predicate?: string; why: string }[] = [
   { resource: "inventory/units", predicate: "category=EXPRT", why: "export containers: number, full/empty, where they are" },
   { resource: "road/gatetransactions", why: "empties picked up and loads dropped off at the gate" },
   { resource: "inventory/moveevents", why: "containers loaded onto vessels" },
+  { resource: "road/gateappointments", why: "truckers' gate appointments (S-055: fields to confirm)" },
+  { resource: "road/appointmenttimeslots", why: "open gate appointment slots (S-055: fields to confirm)" },
 ];
 
 export function portHoustonConfigured(env: NodeJS.ProcessEnv = process.env): boolean {

@@ -19,8 +19,9 @@ import { dailySummaryEmail, dateChangeEmail, exceptionAlertEmail, type BookingLi
  *    needs attention.
  * Each company is emailed separately and never learns who else follows a booking (P-001).
  */
-const ALERT_KINDS: ExceptionKind[] = ["EMPTIES_NOT_PICKED_UP", "NOT_DELIVERED", "CUTOFF_PASSED_NOT_DELIVERED"];
-const DATE_FIELDS = new Set<string>(["Receiving opens (ERD)", ...Object.values(CUTOFF_LABELS)]);
+const ALERT_KINDS: ExceptionKind[] = ["EMPTIES_NOT_PICKED_UP", "NOT_DELIVERED", "CUTOFF_PASSED_NOT_DELIVERED", "ROLLED", "ON_HOLD", "VGM_MISSING", "STORAGE"];
+// Vessel schedule changes (S-054) go out as date-change emails.
+const DATE_FIELDS = new Set<string>(["Receiving opens (ERD)", ...Object.values(CUTOFF_LABELS), "Vessel departs (ETD)"]);
 export const DIGEST_HOUR = 7;
 
 /** The Houston day ("2026-12-01") a morning summary is due for, or null before the send hour. */
@@ -73,7 +74,8 @@ export class Notifier {
   }
 
   private async exceptionAlerts(org: Organization, b: TrackedBooking, to: string[]) {
-    const current = bookingExceptions(b, this.now()).filter((e) => ALERT_KINDS.includes(e.kind));
+    // Only critical ones alert by email (a hold days ahead is a warning, shown in the app).
+    const current = bookingExceptions(b, this.now()).filter((e) => ALERT_KINDS.includes(e.kind) && e.severity === "critical");
     if (current.length === 0) return;
     const key = cargoCutoff(b.latest!.data!) ?? "none";
     // Record each kind first; only email if at least one is new.
