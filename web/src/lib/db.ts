@@ -6,7 +6,7 @@ import path from "node:path";
  * SQLite via Node's built-in driver: no native build step, one file on disk.
  * Fine for a single-server POC; swap for Postgres when we have real users.
  */
-const SCHEMA_VERSION = 5;
+const SCHEMA_VERSION = 6;
 
 /**
  * Shared bookings (P-001, D-015): one record per real booking (carrier + number).
@@ -68,6 +68,40 @@ const PASSWORD_RESETS_TABLE = `
 `;
 
 /**
+ * Email (D-037): every email Efficio sends or previews, alert de-duplication, daily summaries,
+ * and each user's alert preference.
+ */
+const EMAIL_TABLES = `
+  CREATE TABLE email_outbox (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    kind TEXT NOT NULL,
+    to_addr TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    text_body TEXT NOT NULL,
+    html_body TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('preview', 'sent', 'failed')),
+    error TEXT,
+    provider_id TEXT,
+    created_at TEXT NOT NULL
+  );
+  CREATE INDEX email_outbox_created ON email_outbox(created_at);
+  CREATE TABLE alerts_sent (
+    org_id INTEGER NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    booking_id INTEGER NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+    kind TEXT NOT NULL,
+    alert_key TEXT NOT NULL,
+    sent_at TEXT NOT NULL,
+    PRIMARY KEY (org_id, booking_id, kind, alert_key)
+  );
+  CREATE TABLE digests_sent (
+    org_id INTEGER NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    day TEXT NOT NULL,
+    sent_at TEXT NOT NULL,
+    PRIMARY KEY (org_id, day)
+  );
+`;
+
+/**
  * Upgrades from older versions. v2 -> v3 keeps organizations, users, sessions and invites,
  * and resets bookings: before v3 they had no carrier and only ever held simulated data.
  */
@@ -81,6 +115,7 @@ const MIGRATIONS: Record<number, string> = {
   `,
   4: LOGIN_ATTEMPTS_TABLE,
   5: PASSWORD_RESETS_TABLE,
+  6: `${EMAIL_TABLES} ALTER TABLE users ADD COLUMN email_alerts INTEGER NOT NULL DEFAULT 1;`,
 };
 
 const SCHEMA = `
@@ -107,6 +142,7 @@ const SCHEMA = `
     org_role TEXT,
     disabled_at TEXT,
     created_at TEXT NOT NULL,
+    email_alerts INTEGER NOT NULL DEFAULT 1,
     CHECK (is_super_admin = 1 OR (org_id IS NOT NULL AND org_role IN ('admin', 'member')))
   );
   CREATE TABLE sessions (
@@ -126,7 +162,7 @@ const SCHEMA = `
     used_at TEXT,
     created_at TEXT NOT NULL
   );
-${BOOKING_TABLES}${LOGIN_ATTEMPTS_TABLE}${PASSWORD_RESETS_TABLE}  CREATE INDEX users_org ON users(org_id);
+${BOOKING_TABLES}${LOGIN_ATTEMPTS_TABLE}${PASSWORD_RESETS_TABLE}${EMAIL_TABLES}  CREATE INDEX users_org ON users(org_id);
   CREATE INDEX sessions_user ON sessions(user_id);
 `;
 

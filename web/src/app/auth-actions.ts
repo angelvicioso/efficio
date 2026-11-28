@@ -80,3 +80,27 @@ export async function resetPasswordAction(_prev: FormState, formData: FormData):
   await startSession(user.id);
   redirect(homePath(user));
 }
+
+/** "Forgot password?" (D-037). Always the same reply, so it never reveals whether an account exists. */
+export async function forgotPasswordAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const { RESET_HOURS } = await import("@/lib/auth/accounts");
+  const { passwordResetEmail } = await import("@/lib/email/templates");
+  const { mailService, linkBase } = await import("@/lib/service");
+  const email = String(formData.get("email") ?? "").trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: "Enter the email address you sign in with." };
+  const request = accountService().requestPasswordReset(email);
+  if (request) {
+    const { baseUrl } = await import("@/lib/auth/session");
+    const base = await baseUrl().catch(() => linkBase());
+    await mailService().send(passwordResetEmail({ to: request.user.email, link: `${base}/reset/${request.token}`, hours: RESET_HOURS, byAdmin: null }));
+  }
+  return { message: `If there's an Efficio account for ${email}, we've emailed it a link to reset the password. The link expires in ${RESET_HOURS} hours. Nothing arriving? Check spam, or ask your company's Efficio admin.` };
+}
+
+export async function setMyEmailAlertsAction(formData: FormData): Promise<void> {
+  const { requireUser } = await import("@/lib/auth/session");
+  const user = await requireUser();
+  accountService().setEmailAlerts(user.id, formData.get("on") === "1");
+  const { revalidatePath } = await import("next/cache");
+  revalidatePath("/account");
+}

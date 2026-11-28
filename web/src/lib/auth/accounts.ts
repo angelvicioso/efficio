@@ -34,6 +34,8 @@ export interface User {
   orgId: number | null;
   orgRole: OrgRole | null;
   disabled: boolean;
+  /** Receives exception alerts, daily summaries and date-change emails (D-037). */
+  emailAlerts: boolean;
   createdAt: string;
 }
 
@@ -60,6 +62,8 @@ export const INVITE_DAYS = 7;
 export const MIN_PASSWORD_LENGTH = 10;
 /** Password reset links are valid this long (D-032). */
 export const RESET_HOURS = 24;
+/** Self-service resets allowed per account per hour (D-037). */
+export const MAX_SELF_RESETS_PER_HOUR = 3;
 /** R-014 / D-021: 5 wrong passwords in a row lock the email for an hour. */
 export const MAX_FAILED_LOGINS = 5;
 export const LOCKOUT_MINUTES = 60;
@@ -110,6 +114,7 @@ interface UserRow {
   org_role: OrgRole | null;
   disabled_at: string | null;
   created_at: string;
+  email_alerts: number;
 }
 
 interface InviteRow {
@@ -132,6 +137,7 @@ function toUser(r: UserRow): User {
     orgId: r.org_id,
     orgRole: r.org_role,
     disabled: r.disabled_at !== null,
+    emailAlerts: r.email_alerts !== 0,
     createdAt: r.created_at,
   };
 }
@@ -418,16 +424,46 @@ export class AccountService {
    * Creates a single-use reset link token for a user. Any earlier unused link for them stops
    * working. Callers must check the admin may manage this user (see app actions).
    */
-  createPasswordReset(userId: number, createdBy: number): { token: string; expiresAt: string } {
+  createPasswordReset(userId: number, createdBy: number | null): { token: string; expiresAt: string } {
     const user = this.getUser(userId);
     if (!user) throw new AccountError("User not found.");
-    this.db.prepare("DELETE FROM password_resets WHERE user_id = ? AND used_at IS NULL").run(userId);
+    // Cancel (not delete) earlier unused links, so they still count toward the hourly limit.
+    this.db.prepare("UPDATE password_resets SET used_at = ? WHERE user_id = ? AND used_at IS NULL").run(this.iso(), userId);
     const token = newToken();
     const expiresAt = this.iso(RESET_HOURS * 60 * 60 * 1000);
     this.db
       .prepare("INSERT INTO password_resets (token_hash, user_id, created_by, expires_at, created_at) VALUES (?, ?, ?, ?, ?)")
       .run(hashToken(token), userId, createdBy, expiresAt, this.iso());
     return { token, expiresAt };
+  }
+
+  /**
+   * Self-service "forgot password" (D-037). Returns a token to email, or null when there's no
+   * active account or too many recent requests. Callers must reply the same way either way, so
+   * the response never reveals whether an account exists.
+   */
+  requestPasswordReset(emailInput: string): { user: User; token: string } | null {
+    const r = this.db.prepare("SELECT * FROM users WHERE email = ?").get(normalizeEmail(emailInput)) as UserRow | undefined;
+    if (!r || r.disabled_at) return null;
+    const recent = this.db
+      .prepare("SELECT COUNT(*) AS n FROM password_resets WHERE user_id = ? AND created_by IS NULL AND created_at > ?")
+      .get(r.id, this.iso(-60 * 60 * 1000)) as { n: number };
+    if (recent.n >= MAX_SELF_RESETS_PER_HOUR) return null;
+    const { token } = this.createPasswordReset(r.id, null);
+    return { user: toUser(r), token };
+  }
+
+  // ---------- Email alerts (D-037) ----------
+
+  setEmailAlerts(userId: number, on: boolean): void {
+    this.db.prepare("UPDATE users SET email_alerts = ? WHERE id = ?").run(on ? 1 : 0, userId);
+  }
+
+  /** Active people at a company who want alert emails. */
+  alertRecipients(orgId: number): User[] {
+    return (
+      this.db.prepare("SELECT * FROM users WHERE org_id = ? AND disabled_at IS NULL AND email_alerts = 1 ORDER BY id").all(orgId) as unknown as UserRow[]
+    ).map(toUser);
   }
 
   /** The user a usable (unused, unexpired) reset link belongs to, or null. */

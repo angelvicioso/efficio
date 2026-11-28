@@ -4,7 +4,10 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { AccountError, ORG_TYPES, type OrgType } from "@/lib/auth/accounts";
 import { baseUrl, requireSuperAdmin } from "@/lib/auth/session";
-import { accountService } from "@/lib/service";
+import { accountService, mailService } from "@/lib/service";
+import { INVITE_DAYS, RESET_HOURS } from "@/lib/auth/accounts";
+import { inviteEmail, passwordResetEmail } from "@/lib/email/templates";
+import { emailNote } from "@/lib/email/note";
 import type { FormState } from "../ActionForm";
 
 function fail(e: unknown): FormState {
@@ -42,10 +45,9 @@ export async function inviteSuperAdminAction(_prev: FormState, formData: FormDat
       createdBy: me.id,
     });
     revalidatePath("/admin");
-    return {
-      message: `Invite created for ${invite.email}. Send them this link. It works once and expires in 7 days.`,
-      link: `${await baseUrl()}/invite/${token}`,
-    };
+    const link = `${await baseUrl()}/invite/${token}`;
+    const sent = await mailService().send(inviteEmail({ to: invite.email, inviterName: me.name, orgName: null, link, days: INVITE_DAYS }));
+    return { message: `Invite for ${invite.email}: ${emailNote(sent)}. It works once and expires in ${INVITE_DAYS} days.`, link };
   } catch (e) {
     return fail(e);
   }
@@ -131,8 +133,9 @@ export async function resetSuperAdminPasswordAction(_prev: FormState, formData: 
   const target = accountService().getUser(Number(formData.get("userId")));
   if (!target?.isSuperAdmin) return { error: "User not found." };
   const { token } = accountService().createPasswordReset(target.id, me.id);
-  return {
-    message: `Reset link for ${target.email}. Send it privately. It works once and expires in 24 hours.`,
-    link: `${await baseUrl()}/reset/${token}`,
-  };
+  const link = `${await baseUrl()}/reset/${token}`;
+  const sent = await mailService().send(passwordResetEmail({ to: target.email, link, hours: RESET_HOURS, byAdmin: me.name }));
+  return { message: `Reset link for ${target.email}: ${emailNote(sent)}. It works once and expires in ${RESET_HOURS} hours.`, link };
 }
+
+/** Turn alerts on/off is per person (account page); admins view sent emails on /admin/emails. */

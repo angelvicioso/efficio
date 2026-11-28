@@ -161,6 +161,9 @@ interface SnapshotRow {
 }
 
 export class BookingService {
+  /** Called after each new port reading is stored, e.g. to send emails (D-037). */
+  onSnapshot: ((bookingId: number) => Promise<void>) | null = null;
+
   constructor(
     private readonly db: DatabaseSync,
     private readonly adapter: PortAdapter,
@@ -443,6 +446,7 @@ export class BookingService {
     const result = this.db
       .prepare("INSERT INTO snapshots (booking_id, fetched_at, source, data, error) VALUES (?, ?, ?, ?, ?)")
       .run(id, fetchedAt, this.adapter.source, data ? JSON.stringify(data) : null, error);
+    if (this.onSnapshot) await this.onSnapshot(id);
     return { id: Number(result.lastInsertRowid), fetchedAt, source: this.adapter.source, data, error };
   }
 

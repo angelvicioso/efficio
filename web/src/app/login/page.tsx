@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser, homePath } from "@/lib/auth/session";
 import { accountService } from "@/lib/service";
@@ -24,8 +25,8 @@ export default async function LoginPage() {
         </label>
       </ActionForm>
       <p className="muted small">
-        Efficio is invite-only. Ask your company’s Efficio admin for an invite link. Forgot your password? Your admin can send
-        you a reset link.
+        <Link href="/forgot">Forgot your password?</Link> · Efficio is invite-only: ask your company’s Efficio admin for an
+        invite.
       </p>
     </section>
   );

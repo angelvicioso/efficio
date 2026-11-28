@@ -33,10 +33,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </span>
             {user && (
               <>
-                <span className="muted small" title={user.email}>
+                <Link href="/account" className="muted small header-account" title={`${user.email}: account and email alerts`}>
                   {user.name}
                   {user.isSuperAdmin && " · super admin"}
-                </span>
+                </Link>
                 <form action={logoutAction}>
                   <button type="submit" className="link-button">
                     Sign out

@@ -12,11 +12,14 @@ export async function register() {
     console.log("[refresh] automatic refresh is off (REFRESH_INTERVAL_MINUTES=0)");
     return;
   }
-  const { bookingService } = await import("./lib/service");
+  const { bookingService, notificationService } = await import("./lib/service");
   startScheduler(minutes * 60_000, async () => {
     const started = Date.now();
     const { refreshed, skipped } = await bookingService().refreshDue();
     console.log(`[refresh] ${refreshed} booking(s) refreshed, ${skipped} finished skipped, in ${Date.now() - started} ms`);
+    // Morning summaries go out on the first run after 7 AM Houston time (D-037).
+    const summaries = await notificationService().sendDailySummaries();
+    if (summaries) console.log(`[email] daily summary sent to ${summaries} compan${summaries === 1 ? "y" : "ies"}`);
   });
   console.log(`[refresh] refreshing tracked bookings every ${minutes} minute(s)`);
 }

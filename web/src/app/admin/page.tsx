@@ -40,6 +40,9 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       )}
       <section className="intro">
         <h1>All organizations</h1>
+        <p className="small">
+          <Link href="/admin/emails">Emails sent by Efficio →</Link>
+        </p>
         <p className="muted">Every customer has its own workspace. Open one to see its bookings and manage its team.</p>
       </section>
 

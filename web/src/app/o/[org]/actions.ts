@@ -6,7 +6,10 @@ import { AccountError, type OrgRole } from "@/lib/auth/accounts";
 import { canManageOrgSettings } from "@/lib/auth/permissions";
 import { baseUrl, requireOrgAccess, requireTeamManager } from "@/lib/auth/session";
 import { BookingError, type BatchResult } from "@/lib/bookings";
-import { accountService, bookingService } from "@/lib/service";
+import { accountService, bookingService, mailService } from "@/lib/service";
+import { INVITE_DAYS, RESET_HOURS } from "@/lib/auth/accounts";
+import { inviteEmail, passwordResetEmail } from "@/lib/email/templates";
+import { emailNote } from "@/lib/email/note";
 import type { FormState, ResultGroup } from "../../ActionForm";
 
 /**
@@ -131,10 +134,9 @@ export async function inviteMemberAction(_prev: FormState, formData: FormData): 
       allowOtherDomain: user.isSuperAdmin && formData.get("allowOtherDomain") === "on",
     });
     revalidatePath(`/o/${org.slug}/team`);
-    return {
-      message: `Invite created for ${invite.email}. Send them this link. It works once and expires in 7 days.`,
-      link: `${await baseUrl()}/invite/${token}`,
-    };
+    const link = `${await baseUrl()}/invite/${token}`;
+    const sent = await mailService().send(inviteEmail({ to: invite.email, inviterName: user.name, orgName: org.name, link, days: INVITE_DAYS }));
+    return { message: `Invite for ${invite.email}: ${emailNote(sent)}. It works once and expires in ${INVITE_DAYS} days.`, link };
   } catch (e) {
     return fail(e);
   }
@@ -194,10 +196,9 @@ export async function resetMemberPasswordAction(_prev: FormState, formData: Form
   if (!target) return { error: "User not found." };
   if (target.id === user.id) return { error: "Ask another admin to reset your password." };
   const { token } = accountService().createPasswordReset(target.id, user.id);
-  return {
-    message: `Reset link for ${target.email}. Send it privately. It works once and expires in 24 hours.`,
-    link: `${await baseUrl()}/reset/${token}`,
-  };
+  const link = `${await baseUrl()}/reset/${token}`;
+  const sent = await mailService().send(passwordResetEmail({ to: target.email, link, hours: RESET_HOURS, byAdmin: user.name }));
+  return { message: `Reset link for ${target.email}: ${emailNote(sent)}. It works once and expires in ${RESET_HOURS} hours.`, link };
 }
 
 // ---------- Organization settings (super admins) ----------

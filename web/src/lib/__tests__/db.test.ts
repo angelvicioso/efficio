@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { openDb } from "../db";
 
-describe("database upgrade v2 -> v5", () => {
+describe("database upgrade v2 -> v6", () => {
   it("keeps accounts and resets bookings", () => {
     const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "efficio-")), "v2.db");
     const v2 = new DatabaseSync(file);
@@ -30,11 +30,13 @@ describe("database upgrade v2 -> v5", () => {
     v2.close();
 
     const db = openDb(file);
-    expect(db.prepare("PRAGMA user_version").get()).toEqual({ user_version: 5 });
+    expect(db.prepare("PRAGMA user_version").get()).toEqual({ user_version: 6 });
+    expect(db.prepare("SELECT email_alerts FROM users").get()).toEqual({ email_alerts: 1 });
+    expect(db.prepare("SELECT COUNT(*) AS n FROM email_outbox").get()).toEqual({ n: 0 });
     expect(db.prepare("SELECT COUNT(*) AS n FROM password_resets").get()).toEqual({ n: 0 });
     expect(db.prepare("SELECT COUNT(*) AS n FROM login_attempts").get()).toEqual({ n: 0 });
     // A safety copy of the old file was made before upgrading (D-022)
-    const copies = fs.readdirSync(path.dirname(file)).filter((f) => f.startsWith("v2.db.before-v5-"));
+    const copies = fs.readdirSync(path.dirname(file)).filter((f) => f.startsWith("v2.db.before-v6-"));
     expect(copies).toHaveLength(1);
     const old = new DatabaseSync(path.join(path.dirname(file), copies[0]));
     expect(old.prepare("PRAGMA user_version").get()).toEqual({ user_version: 2 });
