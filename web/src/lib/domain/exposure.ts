@@ -61,6 +61,23 @@ export function bookingExposure(b: TrackedBooking, rates: Rates, now: Date = new
     });
   }
 
+  // --- Accrued: chassis on containers out on the street (empty out until full in), past chassis free days ---
+  if (rates.chassisPerDay > 0) {
+    const onChassis = containers
+      .filter((c) => c.emptyPickedUpAt)
+      .map((c) => ({ c, days: Math.max(0, days((c.fullGateInAt ? Date.parse(c.fullGateInAt) : t) - Date.parse(c.emptyPickedUpAt!)) - rates.chassisFreeDays) }))
+      .filter((x) => x.days > 0);
+    if (onChassis.length) {
+      const total = onChassis.reduce((s, x) => s + x.days, 0);
+      lines.push({
+        kind: "accrued",
+        label: `Chassis: ${plural(onChassis.length, "container")}, ${plural(total, "chassis day")}`,
+        amount: total * rates.chassisPerDay,
+        formula: `${plural(total, "day")}${rates.chassisFreeDays ? ` past ${rates.chassisFreeDays} free` : ""} × ${money(rates.chassisPerDay)} (your chassis rate)`,
+      });
+    }
+  }
+
   // --- Accrued: export storage on rolled containers stored over 7 days (Subrule 093) ---
   const rolledAtTerminal = containers.filter(
     (c) => c.stage === "FULL_AT_TERMINAL" && c.fullGateInAt && c.plannedVessel && bookedVessel && c.plannedVessel.id !== bookedVessel,
@@ -94,6 +111,14 @@ export function bookingExposure(b: TrackedBooking, rates: Rates, now: Date = new
       if (extra > 0) {
         lines.push({ kind: "atRisk", label: `More detention: ${plural(outNotIn.length, "container")} held ${nextDays} more days`, amount: extra, formula: `until the next sailing, ${nextDays} days later, at the detention rates` });
       }
+    }
+    if (outNotIn.length && rates.chassisPerDay > 0) {
+      lines.push({
+        kind: "atRisk",
+        label: `More chassis days: ${plural(outNotIn.length, "container")} out ${nextDays} more days`,
+        amount: outNotIn.length * nextDays * rates.chassisPerDay,
+        formula: `${outNotIn.length} × ${nextDays} days × ${money(rates.chassisPerDay)} (your chassis rate)`,
+      });
     }
     if (atTerminal.length) {
       const storage = atTerminal.reduce((s, c) => {

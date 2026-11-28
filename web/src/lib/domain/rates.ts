@@ -12,6 +12,8 @@ export type RateKey =
   | "detentionFreeDays"
   | "detentionDay4to6"
   | "detentionDay7plus"
+  | "chassisPerDay"
+  | "chassisFreeDays"
   | "nextSailingDays"
   | "missedSailingCost";
 
@@ -20,8 +22,8 @@ export interface RateInfo {
   unit: string;
   value: number;
   source: string;
-  /** "port": from Port Houston's tariff; "carrier": carrier default, replace with your contract; "yours": your own estimate. */
-  kind: "port" | "carrier" | "yours";
+  /** "port": Port Houston's tariff; "carrier": carrier default, replace with your contract; "chassis": your chassis provider or trucker; "yours": your own estimate. */
+  kind: "port" | "carrier" | "chassis" | "yours";
 }
 
 export const DEFAULT_RATES: Record<RateKey, RateInfo> = {
@@ -34,6 +36,8 @@ export const DEFAULT_RATES: Record<RateKey, RateInfo> = {
   detentionFreeDays: { label: "Carrier detention free days (empty out to full in)", unit: "days", value: 3, source: "Default from Maersk's US export detention tariff (Jan 2026). Replace with your contract", kind: "carrier" },
   detentionDay4to6: { label: "Carrier detention, first 3 days past free time", unit: "per container, per day", value: 360, source: "Default from Maersk's US export detention tariff (Jan 2026). Replace with your contract", kind: "carrier" },
   detentionDay7plus: { label: "Carrier detention, after that", unit: "per container, per day", value: 465, source: "Default from Maersk's US export detention tariff (Jan 2026). Replace with your contract", kind: "carrier" },
+  chassisPerDay: { label: "Chassis per day (pool, leasing company or trucker)", unit: "per container, per day", value: 0, source: "Not set: add your chassis rate (Q-043)", kind: "chassis" },
+  chassisFreeDays: { label: "Chassis free days", unit: "days", value: 0, source: "Most chassis are charged from the first day", kind: "chassis" },
   nextSailingDays: { label: "Days until the next sailing if this one is missed", unit: "days", value: 7, source: "Efficio default: most services call weekly", kind: "yours" },
   missedSailingCost: { label: "Your own cost of a missed sailing (penalties, lost sales)", unit: "per booking", value: 0, source: "Not set: add your own estimate", kind: "yours" },
 };

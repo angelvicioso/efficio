@@ -53,7 +53,7 @@ Stories are **Draft** until their blocking questions are answered and acceptance
 | S-057 | **Reefers and hazmat**: plugged-in/power status and temperature for reefers; hazmat flags and placards. | Reefer bookings to test | **Built** (booking page) |
 | S-058 | **Storage risk**: dwell days and last free day (`dwellDays`, `lastFreeDay`) to warn before storage charges. | — | **Built** (exception + email) |
 | S-059 | **Who delivered it**: trucking company per gate move (`trkcoId`), for exporters coordinating several truckers. | — | **Built** (booking page; shows Port Houston's trucker code) |
-| S-060 | **Money at risk**: estimate what at-risk bookings could cost: charges already adding up (carrier detention past free days; export storage on rolled containers) and what missing the sailing would add (more detention, export storage, rehandling, reefer power, exam move, weighing, own penalty). Totals on the bookings page, per-booking amounts, a line-by-line card on the booking page, and a total in the morning email. Each company can set its own rates. | Carrier contracts (Q-041) | **Built** (D-040) |
+| S-060 | **Money at risk**: estimate what at-risk bookings could cost: charges already adding up (carrier detention past free days; chassis days once a rate is set; export storage on rolled containers) and what missing the sailing would add (more detention, more chassis days, export storage, rehandling, reefer power, exam move, weighing, own penalty). Totals on the bookings page, per-booking amounts, a line-by-line card on the booking page, and a total in the morning email. Each company can set its own rates. | Carrier contracts (Q-041) | **Built** (D-040) |
 
 ### E-04 · Multi-party collaboration (P-001)
 | ID | Story | Blocked by | Status |

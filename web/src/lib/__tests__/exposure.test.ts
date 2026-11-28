@@ -101,3 +101,25 @@ describe("money at risk (S-060)", () => {
     expect(() => rates.set(acme.id, "rehandle", -5, null)).toThrow();
   });
 });
+
+describe("chassis (S-060)", () => {
+  it("isn't counted until a company sets its chassis rate", () => {
+    const b = booking([container({ stage: "EMPTY_PICKED_UP", emptyPickedUpAt: at(-48) })], 10);
+    expect(bookingExposure(b, r, now).lines.some((l) => l.label.includes("hassis"))).toBe(false);
+  });
+
+  it("counts days out past chassis free days, and more days if the sailing is missed", () => {
+    const own = { ...r, chassisPerDay: 40, chassisFreeDays: 1 };
+    // One container out 2 days (cutoff in 10h, so critical), one delivered after 3 days out
+    const b = booking(
+      [
+        container({ number: "AAAU0000001", stage: "EMPTY_PICKED_UP", emptyPickedUpAt: at(-48) }),
+        container({ number: "AAAU0000002", stage: "FULL_AT_TERMINAL", emptyPickedUpAt: at(-96), fullGateInAt: at(-24) }),
+      ],
+      10,
+    );
+    const lines = bookingExposure(b, own, now).lines;
+    expect(lines.find((l) => l.label.startsWith("Chassis:"))?.amount).toBe((1 + 2) * 40); // 2-1 + 3-1 days
+    expect(lines.find((l) => l.label.startsWith("More chassis days"))?.amount).toBe(7 * 40);
+  });
+});

@@ -113,6 +113,7 @@ export default async function BookingPage({ params }: { params: Promise<{ org: s
           <p className="muted small">
             Estimates from <Link href={`/o/${org.slug}/rates`}>your rates</Link> (Port Houston Tariff 14 and carrier defaults). Your
             invoices are what count.
+            {rates?.chassisPerDay === 0 && " Chassis isn’t counted yet: add your chassis rate on the Rates page."}
           </p>
         </section>
       )}

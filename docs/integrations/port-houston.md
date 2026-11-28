@@ -118,7 +118,7 @@ From Port Houston's published Tariff 14 (D-040, S-060). Re-check each September 
 | Exam move | $139.61 per container | Subrule 090 B1 | At risk: containers on a customs or exam hold |
 | Weighing | $127.39 per container | Subrule 090 B3 | At risk: containers at the terminal with no VGM |
 
-Carrier detention isn't Port Houston's charge. The default is Maersk's published US export tariff (3 free days, $360/day for 3 days, then $465/day), and each company should enter its own terms (Q-041).
+Carrier detention isn't Port Houston's charge. The default is Maersk's published US export tariff (3 free days, $360/day for 3 days, then $465/day), and each company should enter its own terms (Q-041). Chassis isn't a port charge either: each company enters its own per-day rate and free days (Q-043); until then it isn't counted.
 
 ## Going live: checklist
 | # | Step | Owner | Status |

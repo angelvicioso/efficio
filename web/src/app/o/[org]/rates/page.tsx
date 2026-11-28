@@ -11,6 +11,7 @@ export const dynamic = "force-dynamic";
 const GROUPS: { kind: RateInfo["kind"]; title: string; note: string }[] = [
   { kind: "port", title: "Port Houston charges", note: "From Port Houston’s published Tariff 14 (effective September 1, 2026). Change them only if your terminal bills you differently." },
   { kind: "carrier", title: "Carrier detention", note: "Defaults from Maersk’s published US export tariff. Your contract with each carrier is likely different: put your own free days and rates here." },
+  { kind: "chassis", title: "Chassis", note: "What you pay for the chassis while a container is out on the street (empty picked up until delivered full). Not counted until you enter a rate." },
   { kind: "yours", title: "Your own estimates", note: "Things only you know." },
 ];
 
