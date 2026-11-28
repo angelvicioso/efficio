@@ -85,3 +85,16 @@ describe("hosting helpers", () => {
     expect(publicBaseUrl(env({}))).toBeNull();
   });
 });
+
+describe("data source setting (D-039)", () => {
+  it("reads PORT_ADAPTER forgivingly and reports exactly what it got", async () => {
+    const { dataSourceSetting } = await import("../ports");
+    const e = (v?: string) => ({ ...(v === undefined ? {} : { PORT_ADAPTER: v }) }) as unknown as NodeJS.ProcessEnv;
+    expect(dataSourceSetting(e("navis"))).toEqual({ raw: "navis", kind: "live", recognized: true });
+    expect(dataSourceSetting(e(" Navis \n"))).toEqual({ raw: " Navis \n", kind: "live", recognized: true });
+    expect(dataSourceSetting(e("live"))).toMatchObject({ kind: "live" });
+    expect(dataSourceSetting(e())).toEqual({ raw: null, kind: "simulated", recognized: true });
+    expect(dataSourceSetting(e("mock"))).toEqual({ raw: "mock", kind: "simulated", recognized: true });
+    expect(dataSourceSetting(e("navsi"))).toEqual({ raw: "navsi", kind: "simulated", recognized: false });
+  });
+});

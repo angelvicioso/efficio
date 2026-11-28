@@ -19,7 +19,7 @@ import {
 } from "./actions";
 import { portHoustonConfigured } from "@/lib/ports/navis/check";
 import { hasSampleData } from "@/lib/demo/sample";
-import { getPortAdapter } from "@/lib/ports";
+import { dataSourceSetting, getPortAdapter } from "@/lib/ports";
 
 export const dynamic = "force-dynamic";
 
@@ -151,6 +151,19 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
 
       <section className="card">
         <h2>Port Houston connection</h2>
+        {(() => {
+          const ds = dataSourceSetting();
+          return (
+            <p className={`callout small ${ds.kind === "live" ? "" : "callout-preview"}`}>
+              <strong>Data source: {ds.kind === "live" ? "live Port Houston data" : "simulated data"}.</strong>{" "}
+              The server sees <code>PORT_ADAPTER</code> = <code>{ds.raw === null ? "(not set)" : JSON.stringify(ds.raw)}</code>.{" "}
+              {ds.kind === "simulated" &&
+                (ds.recognized
+                  ? "To use live data, set it to navis in Render → Environment, then choose “Save, rebuild, and deploy”."
+                  : "That value isn’t recognized, so Efficio uses simulated data. Set it to navis.")}
+            </p>
+          );
+        })()}
         {portHoustonConfigured() ? (
           <>
             <p className="muted small">

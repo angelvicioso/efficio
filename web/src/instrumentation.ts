@@ -6,6 +6,11 @@ export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
   if (process.env.NEXT_PHASE === "phase-production-build") return;
 
+  // Shown in the hosting logs on every start, so a wrong data source is easy to spot (D-039).
+  const { dataSourceSetting } = await import("./lib/ports");
+  const ds = dataSourceSetting();
+  console.log(`[data] using ${ds.kind} Port Houston data (PORT_ADAPTER=${JSON.stringify(ds.raw)})`);
+
   const { refreshIntervalMinutes, startScheduler } = await import("./lib/scheduler");
   const minutes = refreshIntervalMinutes();
   if (minutes === 0) {
