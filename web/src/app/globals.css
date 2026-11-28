@@ -390,3 +390,14 @@ textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; 
 
 /* Container tables have many columns: give the page room on large screens. */
 .container:has(table.containers) { max-width: 1240px; }
+
+/* Money at risk (S-060) */
+.money-line { display: flex; flex-wrap: wrap; gap: 0.4rem 1.2rem; align-items: baseline; margin: 0 0 0.7rem; }
+.money-risk { color: var(--red-fg); }
+.money-owed { color: var(--amber-fg); }
+.money-line strong { font-size: 1.15rem; }
+.money-chip { margin-top: 0.3rem; font-weight: 600; }
+.money-table th { font-weight: 600; }
+.money-table td.num, .rates-table td.num { white-space: nowrap; text-align: right; vertical-align: top; }
+.rate-input { width: 8rem; text-align: right; }
+.rates-table th { font-weight: 600; }

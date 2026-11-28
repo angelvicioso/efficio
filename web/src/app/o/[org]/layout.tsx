@@ -32,6 +32,7 @@ export default async function OrgLayout({
           <Link href={`/o/${org.slug}`}>Bookings</Link>
           <Link href={`/o/${org.slug}/vessels`}>Vessels</Link>
           {org.type !== "ocean_carrier" && <Link href={`/o/${org.slug}/carriers`}>Carriers</Link>}
+          {org.type !== "ocean_carrier" && <Link href={`/o/${org.slug}/rates`}>Rates</Link>}
           {canManageTeam(user, org) && <Link href={`/o/${org.slug}/team`}>Team</Link>}
         </nav>
       </div>

@@ -1,8 +1,33 @@
 import Link from "next/link";
 import { EXCEPTION_LABELS, type ExceptionKind } from "@/lib/domain/exceptions";
+import { money } from "@/lib/domain/rates";
+
+type Money = { accrued: number; atRisk: number; bookings: number } | null;
+
+/** "$X at risk · $Y already adding up", linking to the rates behind it (S-060). */
+function MoneyLine({ org, m }: { org: string; m: Money }) {
+  if (!m || (m.accrued === 0 && m.atRisk === 0)) return null;
+  return (
+    <div className="money-line" aria-label="Money at risk">
+      {m.atRisk > 0 && (
+        <span className="money-risk">
+          <strong>{money(m.atRisk)}</strong> at risk
+        </span>
+      )}
+      {m.accrued > 0 && (
+        <span className="money-owed">
+          <strong>{money(m.accrued)}</strong> already adding up
+        </span>
+      )}
+      <span className="small muted">
+        across {m.bookings} booking{m.bookings === 1 ? "" : "s"} · estimates from <Link href={`/o/${org}/rates`}>your rates</Link>
+      </span>
+    </div>
+  );
+}
 
 /** "Needs attention" summary at the top of the bookings page (S-049). */
-export function AttentionPanel({ org, summary, active }: { org: string; summary: { kind: ExceptionKind; count: number }[]; active: string }) {
+export function AttentionPanel({ org, summary, active, money: m = null }: { org: string; summary: { kind: ExceptionKind; count: number }[]; active: string; money?: Money }) {
   if (summary.length === 0) {
     return (
       <section className="attention-panel attention-clear" aria-label="Needs attention">
@@ -21,6 +46,7 @@ export function AttentionPanel({ org, summary, active }: { org: string; summary:
           </Link>
         )}
       </div>
+      <MoneyLine org={org} m={m} />
       <div className="attention-cards">
         {summary.map(({ kind, count }) => {
           const meta = EXCEPTION_LABELS[kind];

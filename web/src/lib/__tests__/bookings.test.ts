@@ -313,7 +313,7 @@ describe("upgrading party links to reading ids (v7)", () => {
     db.exec(`
       CREATE TABLE bp_old (booking_id INTEGER, org_id INTEGER, role TEXT, status TEXT, added_by INTEGER, created_at TEXT);
       INSERT INTO bp_old VALUES (1, ${acme.id}, 'exporter', 'claimed', NULL, '2026-01-01T02:30:00Z');
-      DROP TABLE booking_parties; ALTER TABLE bp_old RENAME TO booking_parties; PRAGMA user_version = 6;
+      DROP TABLE booking_parties; ALTER TABLE bp_old RENAME TO booking_parties; DROP TABLE org_rates; PRAGMA user_version = 6;
     `);
     db.close();
     void s;

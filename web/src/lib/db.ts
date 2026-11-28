@@ -6,7 +6,7 @@ import path from "node:path";
  * SQLite via Node's built-in driver: no native build step, one file on disk.
  * Fine for a single-server POC; swap for Postgres when we have real users.
  */
-const SCHEMA_VERSION = 7;
+const SCHEMA_VERSION = 8;
 
 /**
  * Shared bookings (P-001, D-015): one record per real booking (carrier + number).
@@ -118,6 +118,17 @@ const MIGRATIONS: Record<number, string> = {
   4: LOGIN_ATTEMPTS_TABLE,
   5: PASSWORD_RESETS_TABLE,
   6: `${EMAIL_TABLES} ALTER TABLE users ADD COLUMN email_alerts INTEGER NOT NULL DEFAULT 1;`,
+  // Each company's own rates for money-at-risk estimates (D-040).
+  8: `
+    CREATE TABLE org_rates (
+      org_id INTEGER NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      rate_key TEXT NOT NULL,
+      value REAL NOT NULL,
+      updated_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      updated_at TEXT NOT NULL,
+      PRIMARY KEY (org_id, rate_key)
+    );
+  `,
   // Parties see readings by id, not timestamp (timestamps can tie within a millisecond).
   7: `
     ALTER TABLE booking_parties ADD COLUMN since_snapshot INTEGER NOT NULL DEFAULT 0;
@@ -174,6 +185,14 @@ const SCHEMA = `
   );
 ${BOOKING_TABLES}${LOGIN_ATTEMPTS_TABLE}${PASSWORD_RESETS_TABLE}${EMAIL_TABLES}
   ALTER TABLE booking_parties ADD COLUMN since_snapshot INTEGER NOT NULL DEFAULT 0;
+  CREATE TABLE org_rates (
+    org_id INTEGER NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    rate_key TEXT NOT NULL,
+    value REAL NOT NULL,
+    updated_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY (org_id, rate_key)
+  );
   CREATE INDEX users_org ON users(org_id);
   CREATE INDEX sessions_user ON sessions(user_id);
 `;

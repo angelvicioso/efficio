@@ -16,6 +16,7 @@ export type ExceptionKind =
   | "ON_HOLD"
   | "VGM_MISSING"
   | "STORAGE"
+  | "DETENTION"
   | "VESSEL_SCHEDULE_CHANGED"
   | "CUTOFF_MOVED_EARLIER"
   | "NO_UPDATE";
@@ -38,6 +39,7 @@ export const EXCEPTION_LABELS: Record<ExceptionKind, { label: string; severity: 
   ON_HOLD: { label: "Container on hold", severity: "critical", explain: "A customs, line or terminal hold blocks a container. Critical within 24 hours of the cargo cutoff or after it; a warning before that." },
   VGM_MISSING: { label: "VGM missing", severity: "critical", explain: "Cargo cutoff within 24 hours, and a delivered container has no verified gross mass (VGM). It won't be loaded without one." },
   STORAGE: { label: "Storage charges", severity: "critical", explain: "A container's free time at the terminal has ended (critical) or ends within 24 hours (warning)." },
+  DETENTION: { label: "Carrier detention", severity: "warning", explain: "Empties picked up and not yet delivered full, held past the carrier's free days: detention is adding up." },
   VESSEL_SCHEDULE_CHANGED: { label: "Vessel schedule changed", severity: "warning", explain: "The vessel's departure moved earlier or later in the latest update." },
   CUTOFF_MOVED_EARLIER: { label: "Cutoff moved earlier", severity: "warning", explain: "The terminal moved the cargo cutoff earlier in its latest update." },
   NO_UPDATE: { label: "No update from the port", severity: "warning", explain: "The last check with the port failed, so the data may be out of date." },
@@ -45,7 +47,13 @@ export const EXCEPTION_LABELS: Record<ExceptionKind, { label: string; severity: 
 
 export const EXCEPTION_KINDS = Object.keys(EXCEPTION_LABELS) as ExceptionKind[];
 
-export function bookingExceptions(b: TrackedBooking, now: Date = new Date()): BookingException[] {
+/** Company settings that change when something is an exception (from its Rates). */
+export interface ExceptionOptions {
+  /** Carrier detention free days (empty out to full in). Default 3. */
+  detentionFreeDays?: number;
+}
+
+export function bookingExceptions(b: TrackedBooking, now: Date = new Date(), opts: ExceptionOptions = {}): BookingException[] {
   const out: BookingException[] = [];
   const t = now.getTime();
   if (b.latest?.error) {
@@ -138,6 +146,19 @@ export function bookingExceptions(b: TrackedBooking, now: Date = new Date()): Bo
     out.push({ kind: "STORAGE", severity: "warning", title: `Free time ends for ${plural(ending.length, "container", "containers")}`, detail: `in ${formatDuration(first - t)}` });
   }
 
+  // Detention (S-060): empties out longer than the carrier's free days, not yet back full.
+  const freeDays = opts.detentionFreeDays ?? 3;
+  const overFree = containers.filter((c) => c.stage === "EMPTY_PICKED_UP" && c.emptyPickedUpAt && t - Date.parse(c.emptyPickedUpAt) > freeDays * 24 * 60 * 60 * 1000);
+  if (overFree.length) {
+    const longest = Math.max(...overFree.map((c) => t - Date.parse(c.emptyPickedUpAt!)));
+    out.push({
+      kind: "DETENTION",
+      severity: "warning",
+      title: `${plural(overFree.length, "empty", "empties")} out past ${freeDays} free days`,
+      detail: `longest out ${formatDuration(longest)}; detention is adding up`,
+    });
+  }
+
   // Vessel schedule (S-054): departure moved since the last update.
   const prevEtd = b.previous?.data?.vesselVisit?.etd;
   if (prevEtd && etdMs !== null && !sailed && b.previous?.data?.vesselVisit?.id === bookedVessel) {
@@ -168,9 +189,9 @@ export function worstSeverity(list: BookingException[]): Severity | null {
 }
 
 /** How many bookings have each kind of exception. */
-export function exceptionSummary(bookings: TrackedBooking[], now: Date = new Date()): { kind: ExceptionKind; count: number }[] {
+export function exceptionSummary(bookings: TrackedBooking[], now: Date = new Date(), opts: ExceptionOptions = {}): { kind: ExceptionKind; count: number }[] {
   const counts = new Map<ExceptionKind, number>();
-  for (const b of bookings) for (const k of new Set(bookingExceptions(b, now).map((e) => e.kind))) counts.set(k, (counts.get(k) ?? 0) + 1);
+  for (const b of bookings) for (const k of new Set(bookingExceptions(b, now, opts).map((e) => e.kind))) counts.set(k, (counts.get(k) ?? 0) + 1);
   return EXCEPTION_KINDS.filter((k) => counts.has(k)).map((kind) => ({ kind, count: counts.get(kind)! }));
 }
 

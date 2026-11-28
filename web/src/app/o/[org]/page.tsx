@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { requireOrgAccess } from "@/lib/auth/session";
-import { bookingService } from "@/lib/service";
+import { bookingService, ratesService } from "@/lib/service";
+import { bookingExposure, totalExposure } from "@/lib/domain/exposure";
+import { money } from "@/lib/domain/rates";
 import { cargoCutoff, receivingStatus } from "@/lib/domain/status";
 import { diffSnapshots } from "@/lib/domain/changes";
 import { TERMINAL_LABELS } from "@/lib/domain/types";
@@ -41,12 +43,16 @@ export default async function OrgBookingsPage({
   const sort = parsed.key ? parsed : { key: "attention" as const, dir: "asc" as const };
   const filters = parseFilters(sp);
   const all = bookingService().list(org);
-  const bookings = sortBookings(filterBookings(all, filters), sort.key, sort.dir);
+  const isCarrier = org.type === "ocean_carrier";
+  // Money at risk is the exporter's side (S-060); carriers don't see it.
+  const rates = isCarrier ? null : ratesService().forOrg(org.id);
+  const exOpts = rates ? { detentionFreeDays: rates.detentionFreeDays } : {};
+  const now = new Date();
+  const bookings = sortBookings(filterBookings(all, filters, now, exOpts), sort.key, sort.dir);
   const filtered = isFiltered(filters);
   const header = (key: SortKey, label: string, numeric = false) => (
     <SortHeader key={key} org={org.slug} column={key} label={label} active={sort.key === key} dir={sort.dir} numeric={numeric} filters={filters} />
   );
-  const isCarrier = org.type === "ocean_carrier";
   const refreshMinutes = refreshIntervalMinutes();
   const isMock = getPortAdapter().source === "mock";
 
@@ -77,7 +83,7 @@ export default async function OrgBookingsPage({
         </p>
       )}
 
-      {all.length > 0 && <AttentionPanel org={org.slug} summary={exceptionSummary(all)} active={filters.exception} />}
+      {all.length > 0 && <AttentionPanel org={org.slug} summary={exceptionSummary(all, now, exOpts)} active={filters.exception} money={rates ? totalExposure(all, rates, now) : null} />}
 
       {all.length > 0 && (
         <FilterBar
@@ -142,12 +148,20 @@ export default async function OrgBookingsPage({
                   const changes = snap && b.previous?.data ? diffSnapshots(b.previous.data, snap) : [];
                   const p = snap?.onFile ? containerProgress(snap) : null;
                   const notYet = p ? remainingToPickUp(p) : 0;
-                  const exceptions = bookingExceptions(b);
+                  const exceptions = bookingExceptions(b, now, exOpts);
                   const severity = worstSeverity(exceptions);
+                  const exposure = rates ? bookingExposure(b, rates, now) : null;
                   return (
                     <tr key={b.id} className={severity ? `row-${severity}` : undefined}>
                       <td className="attention-cell">
                         <ExceptionList items={exceptions} compact />
+                        {exposure && (exposure.atRisk > 0 || exposure.accrued > 0) && (
+                          <div className="money-chip small">
+                            {exposure.atRisk > 0 && <span className="money-risk">{money(exposure.atRisk)} at risk</span>}
+                            {exposure.atRisk > 0 && exposure.accrued > 0 && " · "}
+                            {exposure.accrued > 0 && <span className="money-owed">{money(exposure.accrued)} adding up</span>}
+                          </div>
+                        )}
                       </td>
                       <td>
                         <Link href={`/o/${org.slug}/bookings/${b.id}`} className="booking-link">

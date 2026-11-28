@@ -1,3 +1,4 @@
+import { money } from "@/lib/domain/rates";
 import type { OutgoingEmail } from "./mailer";
 import type { BookingException } from "@/lib/domain/exceptions";
 import type { FieldChange } from "@/lib/domain/changes";
@@ -76,11 +77,14 @@ export function exceptionAlertEmail(o: { to: string; orgName: string; booking: B
   return { kind: "exception_alert", to: o.to, subject, text, html };
 }
 
-export function dailySummaryEmail(o: { to: string; orgName: string; bookings: BookingLine[]; listLink: string; date: string }): OutgoingEmail {
+export function dailySummaryEmail(o: { to: string; orgName: string; bookings: BookingLine[]; listLink: string; date: string; money?: { accrued: number; atRisk: number } | null }): OutgoingEmail {
   const n = o.bookings.length;
+  const m = o.money && (o.money.accrued > 0 || o.money.atRisk > 0) ? o.money : null;
+  const moneyLine = m ? `Estimated money at risk: ${money(m.atRisk)}${m.accrued > 0 ? ` · already adding up: ${money(m.accrued)}` : ""}` : "";
   const subject = `${n} ${n === 1 ? "booking needs" : "bookings need"} attention · ${o.date}`;
   const text =
     `Good morning. ${n} of ${o.orgName}'s bookings need attention today:\n\n` +
+    (moneyLine ? `${moneyLine}\n\n` : "") +
     o.bookings.map((b) => `${bookingTitle(b)}\n${b.exceptions.map((e) => `  • ${e.title} · ${e.detail}`).join("\n")}\n  ${b.link}`).join("\n\n") +
     `\n\nSee them all: ${o.listLink}\n\n${ALERT_FOOTER}`;
   const rows = o.bookings
@@ -93,7 +97,7 @@ export function dailySummaryEmail(o: { to: string; orgName: string; bookings: Bo
     .join("");
   const html = layout(
     `${n} ${n === 1 ? "booking needs" : "bookings need"} attention`,
-    `<p>${esc(o.orgName)} · ${esc(o.date)}</p><table role="presentation" width="100%" cellpadding="0" cellspacing="0">${rows}</table>${button(o.listLink, "See all in Efficio")}`,
+    `<p>${esc(o.orgName)} · ${esc(o.date)}</p>${moneyLine ? `<p style="font-weight:700;color:#a12424">${esc(moneyLine)}</p>` : ""}<table role="presentation" width="100%" cellpadding="0" cellspacing="0">${rows}</table>${button(o.listLink, "See all in Efficio")}`,
     ALERT_FOOTER,
   );
   return { kind: "daily_summary", to: o.to, subject, text, html };

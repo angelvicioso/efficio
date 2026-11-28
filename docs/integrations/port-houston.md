@@ -106,6 +106,20 @@ All five endpoints answered (100 records per page). **Every list contains all co
 | Vessel progress | vessel `visitPhase`, `ata`, `atd`, `berths[]`; late gate `lateArrivals[]` (shown as-is until its structure is known) |
 | Gate appointments | `/road/gateappointments`, `/road/appointmenttimeslots`: **fields unknown**. Both were added to the connection check; run it and send the report |
 
+## Charges used for money at risk (Tariff 14, effective Sep 1, 2026)
+
+From Port Houston's published Tariff 14 (D-040, S-060). Re-check each September when the tariff is reissued. Defaults live in `web/src/lib/domain/rates.ts`.
+
+| Charge | Rate | Source | When Efficio counts it |
+|---|---|---|---|
+| Export storage | $211.28 per container per 7 days ($279.95 for 53') | Subrule 093 | Only rolled export cargo stored over 7 days. Daily demurrage in the tariff is for imports. |
+| Rehandling | $81.61 per container | Subrule 090 A2 | At risk if containers at the terminal get rolled |
+| Reefer power | $41.12 per container per day | Subrule 090 A1 | At risk: reefers waiting for the next sailing |
+| Exam move | $139.61 per container | Subrule 090 B1 | At risk: containers on a customs or exam hold |
+| Weighing | $127.39 per container | Subrule 090 B3 | At risk: containers at the terminal with no VGM |
+
+Carrier detention isn't Port Houston's charge. The default is Maersk's published US export tariff (3 free days, $360/day for 3 days, then $465/day), and each company should enter its own terms (Q-041).
+
 ## Going live: checklist
 | # | Step | Owner | Status |
 |---|---|---|---|

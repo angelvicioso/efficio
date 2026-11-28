@@ -5,11 +5,18 @@ import { Mailer } from "./email/mailer";
 import { Notifier } from "./email/notifier";
 import { getPortAdapter } from "./ports";
 import { publicBaseUrl } from "./publicUrl";
+import { RatesService } from "./ratesService";
 
 let bookings: BookingService | null = null;
 let accounts: AccountService | null = null;
 let mailer: Mailer | null = null;
 let notifier: Notifier | null = null;
+let rates: RatesService | null = null;
+
+export function ratesService(): RatesService {
+  rates ??= new RatesService(getDb());
+  return rates;
+}
 
 /** Public address for links in emails (no request to read it from in background jobs). */
 export function linkBase(): string {

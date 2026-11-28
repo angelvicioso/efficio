@@ -6,7 +6,8 @@ import { AccountError, type OrgRole } from "@/lib/auth/accounts";
 import { canManageOrgSettings } from "@/lib/auth/permissions";
 import { baseUrl, requireOrgAccess, requireTeamManager } from "@/lib/auth/session";
 import { BookingError, type BatchResult } from "@/lib/bookings";
-import { accountService, bookingService, mailService } from "@/lib/service";
+import { accountService, bookingService, mailService, ratesService } from "@/lib/service";
+import { DEFAULT_RATES, RATE_KEYS } from "@/lib/domain/rates";
 import { INVITE_DAYS, RESET_HOURS } from "@/lib/auth/accounts";
 import { inviteEmail, passwordResetEmail } from "@/lib/email/templates";
 import { emailNote } from "@/lib/email/note";
@@ -234,4 +235,25 @@ export async function removeDomainAction(formData: FormData): Promise<void> {
   if (!canManageOrgSettings(user)) return;
   accountService().removeDomain(org.id, String(formData.get("domain") ?? ""));
   revalidatePath(`/o/${org.slug}/team`);
+}
+
+// ---------- Rates (S-060) ----------
+
+/** Saves a company's own rates. Blank goes back to the Efficio default. Org admins and super admins. */
+export async function saveRatesAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const { user, org } = await requireTeamManager(slugOf(formData));
+  const service = ratesService();
+  const errors: string[] = [];
+  for (const key of RATE_KEYS) {
+    const raw = String(formData.get(key) ?? "").replace(/[$,\s]/g, "");
+    const value = raw === "" ? null : Number(raw);
+    if (value !== null && (!Number.isFinite(value) || value < 0 || value > 1_000_000)) {
+      errors.push(`${DEFAULT_RATES[key].label}: enter a number from 0 to 1,000,000.`);
+      continue;
+    }
+    service.set(org.id, key, value, user.id);
+  }
+  revalidatePath(`/o/${org.slug}`, "layout");
+  if (errors.length) return { error: `Some rates weren’t saved. ${errors.join(" ")}` };
+  return { message: "Rates saved. Money at risk now uses them." };
 }

@@ -2,7 +2,7 @@ import type { TrackedBooking } from "@/lib/bookings";
 import { carrierName } from "./carriers";
 import { containerProgress, remainingToDeliver, remainingToPickUp } from "./containers";
 import { cargoCutoff, receivingStatus, type ReceivingState } from "./status";
-import { bookingExceptions, EXCEPTION_KINDS, type ExceptionKind } from "./exceptions";
+import { bookingExceptions, EXCEPTION_KINDS, type ExceptionKind, type ExceptionOptions } from "./exceptions";
 import { TERMINAL_LABELS, type Terminal } from "./types";
 
 /** Filters for the bookings list (S-047). All optional; they combine (AND). */
@@ -132,7 +132,7 @@ function dateOf(b: TrackedBooking, field: DateField): number | null {
   return iso ? Date.parse(iso) : null;
 }
 
-export function filterBookings(list: TrackedBooking[], f: BookingFilters, now: Date = new Date()): TrackedBooking[] {
+export function filterBookings(list: TrackedBooking[], f: BookingFilters, now: Date = new Date(), opts: ExceptionOptions = {}): TrackedBooking[] {
   const q = f.q.toUpperCase();
   const window = dateWindow(f, now);
   const field: DateField = f.dateField || "cutoff";
@@ -148,7 +148,7 @@ export function filterBookings(list: TrackedBooking[], f: BookingFilters, now: D
     if (f.terminal && snap?.terminal !== f.terminal) return false;
     if (f.status && (!snap || receivingStatus(snap, now).state !== f.status)) return false;
     if (f.exception) {
-      const kinds = bookingExceptions(b, now).map((e) => e.kind);
+      const kinds = bookingExceptions(b, now, opts).map((e) => e.kind);
       if (f.exception === "any" ? kinds.length === 0 : !kinds.includes(f.exception)) return false;
     }
     if (f.action) {

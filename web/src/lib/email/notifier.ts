@@ -5,6 +5,8 @@ import { diffSnapshots } from "@/lib/domain/changes";
 import { carrierName } from "@/lib/domain/carriers";
 import { bookingExceptions, type ExceptionKind } from "@/lib/domain/exceptions";
 import { cargoCutoff } from "@/lib/domain/status";
+import { totalExposure } from "@/lib/domain/exposure";
+import { RatesService } from "@/lib/ratesService";
 import { CUTOFF_LABELS } from "@/lib/domain/types";
 import type { Mailer } from "./mailer";
 import { dailySummaryEmail, dateChangeEmail, exceptionAlertEmail, type BookingLine } from "./templates";
@@ -97,15 +99,16 @@ export class Notifier {
       if (done.changes === 0) continue;
       const recipients = this.accounts.alertRecipients(org.id);
       if (recipients.length === 0) continue;
-      const lines: BookingLine[] = this.bookings
-        .list(org)
-        .map((b) => ({ ...this.line(org, b), exceptions: bookingExceptions(b, now) }))
+      const rates = new RatesService(this.db).forOrg(org.id);
+      const list = this.bookings.list(org);
+      const lines: BookingLine[] = list
+        .map((b) => ({ ...this.line(org, b), exceptions: bookingExceptions(b, now, { detentionFreeDays: rates.detentionFreeDays }) }))
         .filter((l) => l.exceptions.length > 0)
         .sort((a, b) => Number(b.exceptions.some((e) => e.severity === "critical")) - Number(a.exceptions.some((e) => e.severity === "critical")));
       if (lines.length === 0) continue;
       const date = new Intl.DateTimeFormat("en-US", { timeZone: "America/Chicago", weekday: "long", month: "short", day: "numeric" }).format(now);
       for (const u of recipients) {
-        await this.mailer.send(dailySummaryEmail({ to: u.email, orgName: org.name, bookings: lines, listLink: `${this.baseUrl()}/o/${org.slug}`, date }));
+        await this.mailer.send(dailySummaryEmail({ to: u.email, orgName: org.name, bookings: lines, money: org.type === "ocean_carrier" ? null : totalExposure(list, rates, now), listLink: `${this.baseUrl()}/o/${org.slug}`, date }));
       }
       sent++;
     }

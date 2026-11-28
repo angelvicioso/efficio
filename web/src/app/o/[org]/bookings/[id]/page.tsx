@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireOrgAccess } from "@/lib/auth/session";
-import { bookingService } from "@/lib/service";
+import { bookingService, ratesService } from "@/lib/service";
+import { bookingExposure } from "@/lib/domain/exposure";
+import { money } from "@/lib/domain/rates";
 import { receivingStatus } from "@/lib/domain/status";
 import { diffSnapshots } from "@/lib/domain/changes";
 import { CUTOFF_LABELS, TERMINAL_LABELS, vesselPhaseLabel } from "@/lib/domain/types";
@@ -33,6 +35,8 @@ export default async function BookingPage({ params }: { params: Promise<{ org: s
   const parties = service.parties(org, booking.id);
   const isCarrier = booking.access.via === "carrier";
   const status = snap ? receivingStatus(snap) : null;
+  const rates = org.type === "ocean_carrier" ? null : ratesService().forOrg(org.id);
+  const exposure = rates ? bookingExposure(booking, rates) : null;
 
   return (
     <>
@@ -65,7 +69,7 @@ export default async function BookingPage({ params }: { params: Promise<{ org: s
       </section>
 
       {(() => {
-        const ex = bookingExceptions(booking);
+        const ex = bookingExceptions(booking, new Date(), rates ? { detentionFreeDays: rates.detentionFreeDays } : {});
         const sev = worstSeverity(ex);
         return sev ? (
           <section className={`card attention-box attention-box-${sev}`} aria-label="Needs attention">
@@ -74,6 +78,44 @@ export default async function BookingPage({ params }: { params: Promise<{ org: s
           </section>
         ) : null;
       })()}
+
+      {exposure && exposure.lines.length > 0 && (
+        <section className="card money-card" aria-label="Money at risk">
+          <h2>Money at risk</h2>
+          <p className="money-line">
+            {exposure.atRisk > 0 && (
+              <span className="money-risk">
+                <strong>{money(exposure.atRisk)}</strong> if this booking misses its sailing
+              </span>
+            )}
+            {exposure.accrued > 0 && (
+              <span className="money-owed">
+                <strong>{money(exposure.accrued)}</strong> already adding up
+              </span>
+            )}
+          </p>
+          <table className="compact money-table">
+            <tbody>
+              {exposure.lines.map((l) => (
+                <tr key={l.label}>
+                  <th scope="row">
+                    {l.label}
+                    <div className="muted small">{l.formula}</div>
+                  </th>
+                  <td className="num">
+                    {money(l.amount)}
+                    <div className="small muted">{l.kind === "accrued" ? "adding up now" : "if missed"}</div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="muted small">
+            Estimates from <Link href={`/o/${org.slug}/rates`}>your rates</Link> (Port Houston Tariff 14 and carrier defaults). Your
+            invoices are what count.
+          </p>
+        </section>
+      )}
 
       {latest?.error && (
         <div className="callout callout-error" role="alert">

@@ -50,7 +50,7 @@ export const MOCK_SCENARIOS: Record<string, Scenario> = {
   // More bookings on MAERSK HOUSTON, for the vessel view (S-040). HOU1007 is an MSC booking on the
   // same ship (carriers share vessels in alliances), with MSC's own voyage number and cutoff.
   HOU1006: { description: "Another booking on MAERSK HOUSTON, one container rolled", terminal: "BAYPORT", carrierCode: "MAEU", visitId: "MAEHOU247", vesselName: "MAERSK HOUSTON", voyage: "247E", opensIn: -1 * DAY, cargoCutoffIn: 4 * DAY + 3 * HOUR, etdIn: 6 * DAY, equipment: [{ sizeType: "45G1", quantity: 6 }], pickedUp: 3, delivered: 1, vesselPhase: "20INBOUND",
-    extras: { 0: { plannedVessel: { id: "MAEHOU251", name: "MAERSK HOUSTON / 251E" } } } },
+    extras: { 0: { plannedVessel: { id: "MAEHOU251", name: "MAERSK HOUSTON / 251E" } }, 2: { emptyPickedUpAt: "-130h" } } },
   HOU1007: { description: "MSC booking on MAERSK HOUSTON", terminal: "BAYPORT", carrierCode: "MSCU", visitId: "MAEHOU247", vesselName: "MAERSK HOUSTON", voyage: "FX247E", opensIn: -1 * DAY, cargoCutoffIn: 3 * DAY + 15 * HOUR, etdIn: 6 * DAY, equipment: [{ sizeType: "22G1", quantity: 2 }, { sizeType: "45G1", quantity: 1 }], pickedUp: 3, delivered: 3, vesselPhase: "20INBOUND",
     extras: { 2: { hazardous: true } } },
 };
@@ -177,8 +177,9 @@ function mockContainers(bookingNumber: string, s: Scenario, anchor: number): Con
     const first10 = `${prefix}${serial(`${bookingNumber}-${i}`)}`;
     const delivered = i < s.delivered;
     const loaded = i < (s.loaded ?? 0);
-    // Spread events over the past: pickups ~1-3 days ago, gate-ins after the window opened.
-    const pickup = anchor - (3 * DAY - i * 7 * HOUR);
+    // Spread events over the past: delivered ones picked up ~2-3 days ago; empties still out were
+    // picked up within the last ~1.5 days (inside carrier free time), unless a demo says otherwise.
+    const pickup = delivered ? anchor - (3 * DAY - i * 7 * HOUR) : anchor - (36 * HOUR - i * 4 * HOUR);
     const gateIn = Math.max(opened + 2 * HOUR, pickup + 10 * HOUR) + i * HOUR;
     const fullGateInAt = delivered ? new Date(Math.min(gateIn, anchor - HOUR)).toISOString() : null;
     const base: Container = {
@@ -205,6 +206,7 @@ function mockContainers(bookingNumber: string, s: Scenario, anchor: number): Con
       ...extra,
       ...(typeof extra.lastFreeDay === "string" && /^[+-]\d+h$/.test(extra.lastFreeDay) ? { lastFreeDay: rel(extra.lastFreeDay) } : {}),
       ...(extra.appointment && /^[+-]\d+h$/.test(extra.appointment.at) ? { appointment: { ...extra.appointment, at: rel(extra.appointment.at) } } : {}),
+      ...(typeof extra.emptyPickedUpAt === "string" && /^[+-]\d+h$/.test(extra.emptyPickedUpAt) ? { emptyPickedUpAt: rel(extra.emptyPickedUpAt) } : {}),
     };
   });
 }
