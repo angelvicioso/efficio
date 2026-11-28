@@ -26,6 +26,7 @@ Stories are **Draft** until their blocking questions are answered and acceptance
 | S-048 | As an **exporter**, I want to **filter bookings by date**: cargo cutoff, receiving opens or vessel departure, in the next 24h / 48h / 7 days / 14 days, the past 7 days, or custom days. | — | **Done**: custom days follow Houston time, including daylight-saving changes; bookings without that date are left out while it's on |
 | S-049 | As an **exporter**, I want to **see bookings by exception, with the reason** (empties not picked up, containers not delivered, missed cutoff, cutoff moved) starting **1 day before the cargo cutoff**, and visuals that show where attention is needed. | — | **Done**: Needs attention panel with clickable counts; Attention column with specifics; red/amber row highlights; most urgent first by default; Exceptions filter; reasons box on the booking page; counts on Vessels/Carriers cards (D-036) |
 | S-021 | *(Follow-up)* Send these exceptions as **alerts** (email/text) so users don't have to look. | Q-040 | **Built for email** (alerts, daily summary, date changes; preview mode until the domain is verified). Text messages not built |
+| S-050 | As an **org admin**, I want to **remove all our bookings at once**. | — | **Done**: admins and super admins only, with a confirm box; other companies keep theirs; not for carriers |
 | S-005 | As an **exporter**, I want to **sign in to my company account**, so my bookings are private. | — | **Done**: invite-only accounts, org workspaces, org admin/member roles |
 | S-006 | As a **super admin**, I want to **create customer organizations, set their email domains, and open any of them**, so the Efficio team can onboard and support customers. | — | **Done** |
 | S-007 | As an **org admin**, I want to **invite teammates, change roles and disable accounts**, so my company manages its own access. | — | **Done** (invite links are copied by hand until S-008) |
@@ -39,6 +40,19 @@ Stories are **Draft** until their blocking questions are answered and acceptance
 | S-041 | As an **exporter**, I want to see **container progress per booking**: booked → empties picked up → loaded containers dropped at the terminal → loaded on the vessel, so I know what's left to deliver before the cutoff. | Q-033, S-013 | **Built (mock)**: per booking, vessel and carrier, with a progress bar and "still to deliver" (D-020). Live data waits on N4 container/gate fields (Q-021) |
 | S-042 | As an **exporter**, I want the **list of container numbers** on each booking with their status and times, so I can match them to my trucker's moves. | S-013 | **Built (mock)**: expand a booking to see its containers, stages and times |
 | S-043 | As an **exporter**, I want to **see my bookings grouped by carrier**, with booking and container totals, so I can manage each carrier relationship. | — | **Built (mock)**: Carriers tab (hidden for carrier organizations) |
+
+### E-06 · More from Port Houston's data (ideas from the N4 fields, 2026-11-28)
+| ID | Story | Blocked by | Status |
+|---|---|---|---|
+| S-051 | **Holds**: show customs, line or terminal holds on a container (`impediments`, `stopFlags`) and raise an exception when a hold blocks loading. | Verify fields with a held container | Idea |
+| S-052 | **Rolled containers**: detect when a container's outbound vessel changes (`intendedObCvId` vs `actualObCvId`) and alert. | — | Idea |
+| S-053 | **Late-gate permission**: show the vessel's `lateArrivals` so exporters know if late delivery after cutoff is allowed. | Verify field | Idea |
+| S-054 | **Vessel schedule changes and progress**: ETA/ETD changes, actual arrival/departure (`ata`/`atd`), `visitPhase` (inbound, working, departed), berth. Alert on delays. | — | Idea |
+| S-055 | **Gate appointments**: show truckers' appointments per container and open slots near the cutoff (`/road/gateappointments`, `/road/appointmenttimeslots`). | Verify endpoints | Idea |
+| S-056 | **VGM**: show whether each container's verified gross mass is submitted (`vgmVerifiedDate`); exception if missing near cutoff. | — | Idea |
+| S-057 | **Reefers and hazmat**: plugged-in/power status and temperature for reefers; hazmat flags and placards. | Reefer bookings to test | Idea |
+| S-058 | **Storage risk**: dwell days and last free day (`dwellDays`, `lastFreeDay`) to warn before storage charges. | — | Idea |
+| S-059 | **Who delivered it**: trucking company per gate move (`trkcoId`), for exporters coordinating several truckers. | — | Idea |
 
 ### E-04 · Multi-party collaboration (P-001)
 | ID | Story | Blocked by | Status |

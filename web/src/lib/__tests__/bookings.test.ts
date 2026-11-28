@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { openDb } from "../db";
 import { BookingService } from "../bookings";
 import { AccountService } from "../auth/accounts";
@@ -256,5 +256,68 @@ describe("adding many bookings at once (S-046)", () => {
     await expect(s.addMany(acme, { carrierCode: "", text: "  ,  " })).rejects.toThrow(/at least one/);
     const many = Array.from({ length: 51 }, (_, i) => `BK${1000 + i}`).join(",");
     await expect(s.addMany(acme, { carrierCode: "MAEU", text: many })).rejects.toThrow(/up to 50/);
+  });
+});
+
+describe("removing all bookings (S-050)", () => {
+  it("removes only this company's tracking; shared bookings stay for others", async () => {
+    const { s, acme, globex, maersk } = setup();
+    await s.add(acme, M("HOU1002"));
+    await s.add(acme, { carrierCode: "HLCU", bookingNumber: "HOU1003" });
+    await s.add(globex, M("HOU1002"));
+    expect(s.removeAll(acme)).toBe(2);
+    expect(s.list(acme)).toEqual([]);
+    expect(s.list(globex).map((b) => b.bookingNumber)).toEqual(["HOU1002"]);
+    expect(s.list(maersk).map((b) => b.bookingNumber)).toEqual(["HOU1002"]);
+  });
+
+  it("carriers can't remove their bookings", async () => {
+    const { s, maersk } = setup();
+    expect(() => s.removeAll(maersk)).toThrow(/automatically/);
+  });
+});
+
+describe("history from when a company joined (P-001)", () => {
+  it("holds even when another company read the booking in the same millisecond", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-12-01T12:00:00.000Z")); // every reading and join gets the same timestamp
+    try {
+      const { s, acme, globex } = setup();
+      const { id } = await s.add(acme, M("HOU1002"));
+      await s.refresh(acme, id);
+      await s.add(globex, M("HOU1002"));
+      expect(s.history(globex, id)).toHaveLength(1); // only its own first reading
+      expect(s.get(globex, id)!.previous).toBeNull();
+      expect(s.history(acme, id)).toHaveLength(3);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe("upgrading party links to reading ids (v7)", () => {
+  it("converts existing links so each company keeps exactly the history it had", async () => {
+    const { DatabaseSync } = await import("node:sqlite");
+    const fs = await import("node:fs");
+    const os = await import("node:os");
+    const path = await import("node:path");
+    const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "efficio-")), "v6.db");
+    // Build a current database, then roll the party table back to its v6 shape.
+    const db = openDb(file);
+    const acme = new AccountService(db).createOrganization({ name: "Acme Exports", type: "exporter" });
+    const s = new BookingService(db, new MockPortHoustonAdapter());
+    db.prepare("INSERT INTO bookings (carrier_code, booking_number, created_at) VALUES ('MAEU', 'B1', '2026-01-01T00:00:00Z')").run();
+    for (const t of ["2026-01-01T01:00:00Z", "2026-01-01T02:00:00Z", "2026-01-01T03:00:00Z"]) {
+      db.prepare("INSERT INTO snapshots (booking_id, fetched_at, source) VALUES (1, ?, 'mock')").run(t);
+    }
+    db.exec(`
+      CREATE TABLE bp_old (booking_id INTEGER, org_id INTEGER, role TEXT, status TEXT, added_by INTEGER, created_at TEXT);
+      INSERT INTO bp_old VALUES (1, ${acme.id}, 'exporter', 'claimed', NULL, '2026-01-01T02:30:00Z');
+      DROP TABLE booking_parties; ALTER TABLE bp_old RENAME TO booking_parties; PRAGMA user_version = 6;
+    `);
+    db.close();
+    void s;
+    const upgraded = openDb(file);
+    expect(upgraded.prepare("SELECT since_snapshot FROM booking_parties").get()).toEqual({ since_snapshot: 2 }); // joined after reading 2
   });
 });

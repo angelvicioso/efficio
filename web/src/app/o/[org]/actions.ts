@@ -96,6 +96,20 @@ export async function removeBookingAction(formData: FormData): Promise<void> {
   redirect(`/o/${org.slug}`);
 }
 
+/** Org admins (and super admins): stop tracking every booking (S-050). Requires the confirm box. */
+export async function removeAllBookingsAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const { org } = await requireTeamManager(slugOf(formData));
+  if (formData.get("confirm") !== "yes") return { error: "Tick the box to confirm." };
+  let n: number;
+  try {
+    n = bookingService().removeAll(org);
+  } catch (e) {
+    return fail(e);
+  }
+  revalidatePath(`/o/${org.slug}`, "layout");
+  return { message: `Stopped tracking ${n} booking${n === 1 ? "" : "s"}.` };
+}
+
 /** Carrier only: confirm or remove a company that claimed one of its bookings. */
 export async function verifyPartyAction(formData: FormData): Promise<void> {
   const { org } = await requireOrgAccess(slugOf(formData));

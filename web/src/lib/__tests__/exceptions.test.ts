@@ -44,7 +44,7 @@ function booking(o: {
     carrierCode: "MAEU",
     bookingNumber: "B1",
     createdAt: at(-100),
-    access: { role: "exporter", status: "claimed", via: "party", since: null },
+    access: { role: "exporter", status: "claimed", via: "party", since: 0 },
     latest: { id: 2, fetchedAt: now.toISOString(), source: "test", data: o.error ? null : snap(o.cutoffInH), error: o.error ? "port down" : null },
     previous: o.prevCutoffInH === undefined ? null : { id: 1, fetchedAt: at(-1), source: "test", data: snap(o.prevCutoffInH), error: null },
   };

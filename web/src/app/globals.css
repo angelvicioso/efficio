@@ -373,3 +373,6 @@ textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; 
 .email-text { white-space: pre-wrap; font-family: inherit; font-size: 0.9rem; background: var(--bg); }
 .header-account { text-decoration: none; }
 .header-account:hover { text-decoration: underline; }
+.danger-zone { margin-top: 2rem; border-color: var(--red-bg); }
+.danger-zone > summary { cursor: pointer; font-weight: 600; color: var(--red-fg); }
+.danger-zone[open] > summary { margin-bottom: 0.5rem; }

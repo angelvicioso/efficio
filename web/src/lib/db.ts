@@ -6,10 +6,12 @@ import path from "node:path";
  * SQLite via Node's built-in driver: no native build step, one file on disk.
  * Fine for a single-server POC; swap for Postgres when we have real users.
  */
-const SCHEMA_VERSION = 6;
+const SCHEMA_VERSION = 7;
 
 /**
  * Shared bookings (P-001, D-015): one record per real booking (carrier + number).
+ * Kept as it was at schema v3 because the v3 upgrade uses it; later columns are added
+ * by their own upgrade step (and by SCHEMA for new databases).
  * Organizations reach a booking through booking_parties; carrier organizations
  * also see every booking with their carrier code.
  */
@@ -116,6 +118,14 @@ const MIGRATIONS: Record<number, string> = {
   4: LOGIN_ATTEMPTS_TABLE,
   5: PASSWORD_RESETS_TABLE,
   6: `${EMAIL_TABLES} ALTER TABLE users ADD COLUMN email_alerts INTEGER NOT NULL DEFAULT 1;`,
+  // Parties see readings by id, not timestamp (timestamps can tie within a millisecond).
+  7: `
+    ALTER TABLE booking_parties ADD COLUMN since_snapshot INTEGER NOT NULL DEFAULT 0;
+    UPDATE booking_parties SET since_snapshot = (
+      SELECT COALESCE(MAX(s.id), 0) FROM snapshots s
+      WHERE s.booking_id = booking_parties.booking_id AND s.fetched_at < booking_parties.created_at
+    );
+  `,
 };
 
 const SCHEMA = `
@@ -162,7 +172,9 @@ const SCHEMA = `
     used_at TEXT,
     created_at TEXT NOT NULL
   );
-${BOOKING_TABLES}${LOGIN_ATTEMPTS_TABLE}${PASSWORD_RESETS_TABLE}${EMAIL_TABLES}  CREATE INDEX users_org ON users(org_id);
+${BOOKING_TABLES}${LOGIN_ATTEMPTS_TABLE}${PASSWORD_RESETS_TABLE}${EMAIL_TABLES}
+  ALTER TABLE booking_parties ADD COLUMN since_snapshot INTEGER NOT NULL DEFAULT 0;
+  CREATE INDEX users_org ON users(org_id);
   CREATE INDEX sessions_user ON sessions(user_id);
 `;
 

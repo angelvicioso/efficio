@@ -12,7 +12,9 @@ import { AccessBadge } from "../../AccessBadge";
 import { CarrierTrackingLink } from "../../CarrierTrackingLink";
 import { carrierName } from "@/lib/domain/carriers";
 import { AddBookingForm } from "./AddBookingForm";
-import { refreshAllAction } from "./actions";
+import { refreshAllAction, removeAllBookingsAction } from "./actions";
+import { canManageTeam } from "@/lib/auth/permissions";
+import { ActionForm } from "../../ActionForm";
 import { refreshIntervalMinutes } from "@/lib/scheduler";
 import { containerProgress, remainingToPickUp } from "@/lib/domain/containers";
 import { parseSort, sortBookings, type SortDir, type SortKey } from "@/lib/domain/sortBookings";
@@ -32,7 +34,7 @@ export default async function OrgBookingsPage({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const { org: slug } = await params;
-  const { org } = await requireOrgAccess(slug);
+  const { user, org } = await requireOrgAccess(slug);
   const sp = await searchParams;
   // Default order: most urgent first, so exceptions are always at the top (S-049).
   const parsed = parseSort(sp.sort, sp.dir);
@@ -190,6 +192,22 @@ export default async function OrgBookingsPage({
             </table>
           </div>
         </section>
+      )}
+
+      {all.length > 0 && !isCarrier && canManageTeam(user, org) && (
+        <details className="card danger-zone">
+          <summary>Remove all bookings</summary>
+          <p className="small">
+            Stops tracking all {all.length} of {org.name}’s bookings. Other companies following the same bookings aren’t affected.
+            You can track them again later.
+          </p>
+          <ActionForm action={removeAllBookingsAction} submitLabel="Remove all bookings" variant="danger" className="stack">
+            <input type="hidden" name="org" value={org.slug} />
+            <label className="checkbox">
+              <input type="checkbox" name="confirm" value="yes" required /> Yes, stop tracking all {all.length} bookings
+            </label>
+          </ActionForm>
+        </details>
       )}
     </>
   );

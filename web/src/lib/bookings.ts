@@ -45,10 +45,11 @@ export interface BookingAccess {
   /** "carrier": the viewer is the booking's carrier. "party": the viewer is attached to the booking. */
   via: "carrier" | "party";
   /**
-   * Parties only see history from when they joined, so a company can't tell that
-   * someone else was tracking the same booking before it. Null for the carrier.
+   * Parties only see readings taken after they joined, so a company can't tell that someone
+   * else was tracking the same booking before it. It's the last reading's id at join time
+   * (ids always increase, so there are no ties, unlike timestamps). 0 for the carrier.
    */
-  since: string | null;
+  since: number;
 }
 
 export interface StoredSnapshot {
@@ -209,9 +210,10 @@ export class BookingService {
       if (!existing) {
         this.db
           .prepare(
-            "INSERT INTO booking_parties (booking_id, org_id, role, status, added_by, created_at) VALUES (?, ?, ?, 'claimed', ?, ?)",
+            `INSERT INTO booking_parties (booking_id, org_id, role, status, added_by, created_at, since_snapshot)
+             VALUES (?, ?, ?, 'claimed', ?, ?, (SELECT COALESCE(MAX(id), 0) FROM snapshots WHERE booking_id = ?))`,
           )
-          .run(booking.id, viewer.id, ROLE_FOR_ORG_TYPE[viewer.type], addedBy, new Date().toISOString());
+          .run(booking.id, viewer.id, ROLE_FOR_ORG_TYPE[viewer.type], addedBy, new Date().toISOString(), booking.id);
         created = true;
       } else {
         created = false;
@@ -279,12 +281,12 @@ export class BookingService {
       | undefined;
     if (!b) return null;
     if (viewer.type === "ocean_carrier" && viewer.carrierCode === b.carrier_code) {
-      return { role: "carrier", status: "verified", via: "carrier", since: null };
+      return { role: "carrier", status: "verified", via: "carrier", since: 0 };
     }
     const p = this.db
-      .prepare("SELECT role, status, created_at FROM booking_parties WHERE booking_id = ? AND org_id = ?")
-      .get(bookingId, viewer.id) as { role: PartyRole; status: PartyStatus; created_at: string } | undefined;
-    return p ? { role: p.role, status: p.status, via: "party", since: p.created_at } : null;
+      .prepare("SELECT role, status, since_snapshot FROM booking_parties WHERE booking_id = ? AND org_id = ?")
+      .get(bookingId, viewer.id) as { role: PartyRole; status: PartyStatus; since_snapshot: number } | undefined;
+    return p ? { role: p.role, status: p.status, via: "party", since: p.since_snapshot } : null;
   }
 
   list(viewer: Viewer): TrackedBooking[] {
@@ -352,6 +354,18 @@ export class BookingService {
     return { refreshed, skipped };
   }
 
+  /**
+   * The viewer stops following all its bookings (S-050). Other companies keep theirs; shared
+   * records nobody follows any more are deleted. Carrier organizations can't: they see their
+   * bookings implicitly. Returns how many were removed.
+   */
+  removeAll(viewer: Viewer): number {
+    if (viewer.type === "ocean_carrier") throw new BookingError("Carriers see their bookings automatically and can't remove them.", "not_allowed");
+    const n = this.db.prepare("DELETE FROM booking_parties WHERE org_id = ?").run(viewer.id).changes;
+    this.deleteAllUnfollowed();
+    return Number(n);
+  }
+
   /** The viewer stops following a booking. The shared record goes once nobody follows it. */
   remove(viewer: Viewer, id: number): void {
     this.db.prepare("DELETE FROM booking_parties WHERE booking_id = ? AND org_id = ?").run(id, viewer.id);
@@ -397,12 +411,10 @@ export class BookingService {
     return this.snapshots(id, access.since, limit);
   }
 
-  private snapshots(id: number, since: string | null, limit: number): StoredSnapshot[] {
+  private snapshots(id: number, since: number, limit: number): StoredSnapshot[] {
     const rows = this.db
-      .prepare(
-        "SELECT id, fetched_at, source, data, error FROM snapshots WHERE booking_id = ? AND fetched_at >= ? ORDER BY id DESC LIMIT ?",
-      )
-      .all(id, since ?? "", limit) as unknown as SnapshotRow[];
+      .prepare("SELECT id, fetched_at, source, data, error FROM snapshots WHERE booking_id = ? AND id > ? ORDER BY id DESC LIMIT ?")
+      .all(id, since, limit) as unknown as SnapshotRow[];
     return rows.map(toStored);
   }
 
@@ -455,9 +467,9 @@ export class BookingService {
     const prevRow = latest
       ? (this.db
           .prepare(
-            "SELECT id, fetched_at, source, data, error FROM snapshots WHERE booking_id = ? AND id < ? AND fetched_at >= ? AND data IS NOT NULL ORDER BY id DESC LIMIT 1",
+            "SELECT id, fetched_at, source, data, error FROM snapshots WHERE booking_id = ? AND id < ? AND id > ? AND data IS NOT NULL ORDER BY id DESC LIMIT 1",
           )
-          .get(r.id, latest.id, access.since ?? "") as SnapshotRow | undefined)
+          .get(r.id, latest.id, access.since) as SnapshotRow | undefined)
       : undefined;
     return {
       id: r.id,
