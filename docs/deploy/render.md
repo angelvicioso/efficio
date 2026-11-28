@@ -34,6 +34,7 @@ The repository contains a **Render Blueprint** (`render.yaml`) that describes th
 3. Press **Copy report** and send it to Claude. It shows ✓/✗ per data source and field names with masked formats, no real values.
 
 ## Changing settings
+`PORT_ADAPTER`, `REFRESH_INTERVAL_MINUTES` and `EMAIL_MODE` are managed **only in the dashboard**. `render.yaml` marks them `sync: false`, so pushes never overwrite them (D-039). Never give them a `value:` in `render.yaml`.
 In the service's **Environment** tab:
 
 | Variable | Set by | Purpose |

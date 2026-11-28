@@ -321,3 +321,23 @@ describe("upgrading party links to reading ids (v7)", () => {
     expect(upgraded.prepare("SELECT since_snapshot FROM booking_parties").get()).toEqual({ since_snapshot: 2 }); // joined after reading 2
   });
 });
+
+describe("switching data sources (D-039)", () => {
+  it("doesn't compare simulated and live readings, so no false changes or emails", async () => {
+    const db = openDb(":memory:");
+    const acme = new AccountService(db).createOrganization({ name: "Acme Exports", type: "exporter" });
+    const live = new BookingService(db, new MockPortHoustonAdapter());
+    const { id } = await live.add(acme, M("HOU1002")); // source "mock"
+    const other: PortAdapter = {
+      source: "navis-evp",
+      displayName: "live",
+      findCarriers: async () => [],
+      lookupBooking: async (ref) => ({ ...(await new MockPortHoustonAdapter().lookupBooking(ref)), source: "navis-evp", onFile: false, cutoffs: [], vesselVisit: null }),
+    };
+    const switched = new BookingService(db, other);
+    await switched.refresh(acme, id);
+    expect(switched.get(acme, id)!.previous).toBeNull(); // no comparison across sources
+    await switched.refresh(acme, id);
+    expect(switched.get(acme, id)!.previous?.source).toBe("navis-evp"); // same source compares as usual
+  });
+});

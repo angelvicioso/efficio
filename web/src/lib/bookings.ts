@@ -467,9 +467,10 @@ export class BookingService {
     const prevRow = latest
       ? (this.db
           .prepare(
-            "SELECT id, fetched_at, source, data, error FROM snapshots WHERE booking_id = ? AND id < ? AND id > ? AND data IS NOT NULL ORDER BY id DESC LIMIT 1",
+            // Same data source only: switching simulated <-> live isn't a change at the port (D-039).
+            "SELECT id, fetched_at, source, data, error FROM snapshots WHERE booking_id = ? AND id < ? AND id > ? AND source = ? AND data IS NOT NULL ORDER BY id DESC LIMIT 1",
           )
-          .get(r.id, latest.id, access.since) as SnapshotRow | undefined)
+          .get(r.id, latest.id, access.since, latest.source) as SnapshotRow | undefined)
       : undefined;
     return {
       id: r.id,
